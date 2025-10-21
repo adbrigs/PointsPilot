@@ -1,0 +1,7 @@
+streamlit
+pandas
+pyyaml
+numpy
+plotly
+pytest
+plaid-python

@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+*.log
+
+# Streamlit cache
+.streamlit/
+
+# VS Code settings
+.vscode/
+
+# Data files
+data/*.csv
+
+# Credentials (VERY IMPORTANT)
+credentials/

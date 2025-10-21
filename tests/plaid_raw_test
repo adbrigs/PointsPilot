@@ -1,0 +1,97 @@
+"""
+Plaid Sandbox - Raw Transactions Pull Test (with retries + date fix)
+-------------------------------------------------------------------
+Pulls raw transaction data from Plaid sandbox and prints it as JSON.
+"""
+
+import os
+import json
+import time
+from datetime import datetime, timedelta, date
+from plaid import Configuration, ApiClient, Environment
+from plaid.api import plaid_api
+from plaid.model.products import Products
+from plaid.model.sandbox_public_token_create_request import SandboxPublicTokenCreateRequest
+from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.model.transactions_get_request import TransactionsGetRequest
+from plaid.exceptions import ApiException
+
+
+def load_plaid_credentials():
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    cred_path = os.path.join(base_dir, "credentials", "plaid_credentials.json")
+    with open(cred_path, "r") as f:
+        return json.load(f)
+
+
+def create_client():
+    creds = load_plaid_credentials()
+    config = Configuration(
+        host=Environment.Sandbox,
+        api_key={
+            "clientId": creds["PLAID_CLIENT_ID"],
+            "secret": creds["PLAID_SECRET"]
+        },
+    )
+    api_client = ApiClient(config)
+    return plaid_api.PlaidApi(api_client)
+
+
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError(f"Type {type(obj)} not serializable")
+
+
+def main():
+    client = create_client()
+
+    print("🏦 Creating sandbox item for Chase...")
+    public_req = SandboxPublicTokenCreateRequest(
+        institution_id="ins_109508",
+        initial_products=[Products("transactions")]
+    )
+    public_resp = client.sandbox_public_token_create(public_req)
+    public_token = public_resp.public_token
+
+    exchange_req = ItemPublicTokenExchangeRequest(public_token=public_token)
+    exchange_resp = client.item_public_token_exchange(exchange_req)
+    access_token = exchange_resp.access_token
+    print("✅ Access token created.\n")
+
+    start_date = (datetime.now() - timedelta(days=30)).date()
+    end_date = datetime.now().date()
+
+    tx_req = TransactionsGetRequest(
+        access_token=access_token,
+        start_date=start_date,
+        end_date=end_date,
+        options={"count": 20}
+    )
+
+    for attempt in range(5):
+        try:
+            print(f"📡 Attempt {attempt + 1}: Fetching transactions...")
+            tx_resp = client.transactions_get(tx_req)
+            transactions = tx_resp.to_dict()["transactions"]
+            print(f"\n✅ Retrieved {len(transactions)} transactions!\n")
+
+            # Pretty-print JSON with date-safe serialization
+            print(json.dumps(transactions, indent=2, default=json_serial))
+            return
+        except ApiException as e:
+            error_body = json.loads(e.body)
+            if error_body.get("error_code") == "PRODUCT_NOT_READY":
+                print("⏳ Transactions not ready yet — waiting 5 seconds...")
+                time.sleep(5)
+                continue
+            else:
+                print(f"❌ API Error: {e}")
+                break
+
+    print("❌ Failed to retrieve transactions after 5 attempts.")
+
+
+if __name__ == "__main__":
+    main()
