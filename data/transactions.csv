@@ -1,0 +1,33 @@
+date,merchant,amount,card_used,category,plaid_primary,plaid_detailed,confidence,logo_url,website
+2025-10-16,CREDIT CARD 3333 PAYMENT *//,25.0,Freedom Unlimited,Other,LOAN_PAYMENTS,LOAN_PAYMENTS_CREDIT_CARD_PAYMENT,LOW,,
+2025-10-16,Uber,5.4,Freedom Unlimited,Travel,TRANSPORTATION,TRANSPORTATION_TAXIS_AND_RIDE_SHARES,VERY_HIGH,https://plaid-merchant-logos.plaid.com/uber_1060.png,uber.com
+2025-10-15,ACH Electronic CreditGUSTO PAY 123456,5850.0,Freedom Unlimited,Other,GENERAL_SERVICES,GENERAL_SERVICES_ACCOUNTING_AND_FINANCIAL_PLANNING,LOW,,
+2025-10-15,CD DEPOSIT .INITIAL.,1000.0,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE,LOW,,
+2025-10-14,Touchstone Climbing,78.5,Freedom Unlimited,Other,PERSONAL_CARE,PERSONAL_CARE_GYMS_AND_FITNESS_CENTERS,LOW,,
+2025-10-14,United Airlines,500.0,Freedom Unlimited,Travel,TRAVEL,TRAVEL_FLIGHTS,VERY_HIGH,https://plaid-merchant-logos.plaid.com/united_airlines_1065.png,united.com
+2025-10-13,McDonald's,12.0,Freedom Unlimited,Restaurants,FOOD_AND_DRINK,FOOD_AND_DRINK_FAST_FOOD,VERY_HIGH,https://plaid-merchant-logos.plaid.com/mcdonalds_619.png,mcdonalds.com
+2025-10-13,Starbucks,4.33,Freedom Unlimited,Restaurants,FOOD_AND_DRINK,FOOD_AND_DRINK_COFFEE,VERY_HIGH,https://plaid-merchant-logos.plaid.com/starbucks_956.png,starbucks.com
+2025-10-12,FUN,89.4,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE,LOW,,
+2025-10-11,INTRST PYMNT,4.22,Freedom Unlimited,Other,INCOME,INCOME_WAGES,LOW,,
+2025-10-01,United Airlines,500.0,Freedom Unlimited,Travel,TRAVEL,TRAVEL_FLIGHTS,VERY_HIGH,https://plaid-merchant-logos.plaid.com/united_airlines_1065.png,united.com
+2025-09-29,Uber,6.33,Freedom Unlimited,Travel,TRANSPORTATION,TRANSPORTATION_TAXIS_AND_RIDE_SHARES,VERY_HIGH,https://plaid-merchant-logos.plaid.com/uber_1060.png,uber.com
+2025-09-26,Tectra Inc,500.0,Freedom Unlimited,Entertainment,ENTERTAINMENT,ENTERTAINMENT_SPORTING_EVENTS_AMUSEMENT_PARKS_AND_MUSEUMS,LOW,,
+2025-09-25,AUTOMATIC PAYMENT - THANK,2078.5,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE,LOW,,
+2025-09-25,KFC,500.0,Freedom Unlimited,Restaurants,FOOD_AND_DRINK,FOOD_AND_DRINK_FAST_FOOD,VERY_HIGH,https://plaid-merchant-logos.plaid.com/kfc_546.png,kfc.com
+2025-09-25,Madison Bicycle Shop,500.0,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_SPORTING_GOODS,LOW,,
+2025-10-16,CREDIT CARD 3333 PAYMENT *//,25.0,Freedom Unlimited,Other,LOAN_PAYMENTS,LOAN_PAYMENTS_CREDIT_CARD_PAYMENT,LOW,,
+2025-10-16,Uber,5.4,Freedom Unlimited,Travel,TRANSPORTATION,TRANSPORTATION_TAXIS_AND_RIDE_SHARES,VERY_HIGH,https://plaid-merchant-logos.plaid.com/uber_1060.png,uber.com
+2025-10-15,ACH Electronic CreditGUSTO PAY 123456,5850.0,Freedom Unlimited,Other,GENERAL_SERVICES,GENERAL_SERVICES_ACCOUNTING_AND_FINANCIAL_PLANNING,LOW,,
+2025-10-15,CD DEPOSIT .INITIAL.,1000.0,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE,LOW,,
+2025-10-14,Touchstone Climbing,78.5,Freedom Unlimited,Other,PERSONAL_CARE,PERSONAL_CARE_GYMS_AND_FITNESS_CENTERS,LOW,,
+2025-10-14,United Airlines,500.0,Freedom Unlimited,Travel,TRAVEL,TRAVEL_FLIGHTS,VERY_HIGH,https://plaid-merchant-logos.plaid.com/united_airlines_1065.png,united.com
+2025-10-13,McDonald's,12.0,Freedom Unlimited,Restaurants,FOOD_AND_DRINK,FOOD_AND_DRINK_FAST_FOOD,VERY_HIGH,https://plaid-merchant-logos.plaid.com/mcdonalds_619.png,mcdonalds.com
+2025-10-13,Starbucks,4.33,Freedom Unlimited,Restaurants,FOOD_AND_DRINK,FOOD_AND_DRINK_COFFEE,VERY_HIGH,https://plaid-merchant-logos.plaid.com/starbucks_956.png,starbucks.com
+2025-10-12,FUN,89.4,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE,LOW,,
+2025-10-11,INTRST PYMNT,4.22,Freedom Unlimited,Other,INCOME,INCOME_WAGES,LOW,,
+2025-10-01,United Airlines,500.0,Freedom Unlimited,Travel,TRAVEL,TRAVEL_FLIGHTS,VERY_HIGH,https://plaid-merchant-logos.plaid.com/united_airlines_1065.png,united.com
+2025-09-29,Uber,6.33,Freedom Unlimited,Travel,TRANSPORTATION,TRANSPORTATION_TAXIS_AND_RIDE_SHARES,VERY_HIGH,https://plaid-merchant-logos.plaid.com/uber_1060.png,uber.com
+2025-09-26,Tectra Inc,500.0,Freedom Unlimited,Entertainment,ENTERTAINMENT,ENTERTAINMENT_SPORTING_EVENTS_AMUSEMENT_PARKS_AND_MUSEUMS,LOW,,
+2025-09-25,AUTOMATIC PAYMENT - THANK,2078.5,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE,LOW,,
+2025-09-25,KFC,500.0,Freedom Unlimited,Restaurants,FOOD_AND_DRINK,FOOD_AND_DRINK_FAST_FOOD,VERY_HIGH,https://plaid-merchant-logos.plaid.com/kfc_546.png,kfc.com
+2025-09-25,Madison Bicycle Shop,500.0,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_SPORTING_GOODS,LOW,,
