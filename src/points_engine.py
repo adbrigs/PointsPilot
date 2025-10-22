@@ -52,14 +52,50 @@ def normalize_card_name(name: str) -> str:
         "freedom unlimited": "chase freedom unlimited",
         "freedom flex": "chase freedom flex",
         "sapphire preferred": "chase sapphire preferred",
-        "aadvantage": "citi american airlines aadvantage",
-        "citi aadvantage": "citi american airlines aadvantage",
+        "aadvantage": "citi american airlines aadvantage platinum select",
+        "citi aadvantage": "citi american airlines aadvantage platinum select",
+        "citi aa": "citi american airlines aadvantage platinum select",
+        "citi aadvantage platinum": "citi american airlines aadvantage platinum select",
     }
     for key, canonical in aliases.items():
         if key in name:
             return canonical
     return name
 
+# --------------------------------------------------
+# Normalize category names (Plaid → YAML)
+# --------------------------------------------------
+def normalize_category_name(cat: str) -> str:
+    if not isinstance(cat, str):
+        return "Other"
+    cat = cat.strip().lower()
+
+    mapping = {
+        # Core Plaid categories
+        "food_and_drink": "Restaurants",
+        "food_and_drink_fast_food": "Restaurants",
+        "food_and_drink_restaurant": "Restaurants",
+        "general_merchandise": "Shopping",
+        "general_merchandise_sporting_goods": "Shopping",
+        "general_merchandise_clothing": "Shopping",
+        "travel": "Travel",
+        "travel_air": "Travel",
+        "travel_car_rental": "Travel",
+        "travel_lodging": "Travel",
+        "entertainment": "Entertainment",
+        "recreation": "Entertainment",
+        "gas": "Gas",
+        "automotive_fuel": "Gas",
+        "drugstores": "Drugstores",
+        "pharmacy": "Drugstores",
+        "healthcare": "Drugstores",
+        "other": "Other",
+        "none": "Other",
+        "service": "Other",
+    }
+
+    # Fallback: capitalize first letter for YAML readability
+    return mapping.get(cat, cat.replace("_", " ").title())
 
 # --------------------------------------------------
 # Compute points from transactions and save CSV
@@ -91,7 +127,7 @@ def compute_points(transactions_path: str = None):
     df["best_rate"] = 0.0
 
     for i, row in df.iterrows():
-        cat = str(row["category"]).strip()
+        cat = normalize_category_name(str(row["category"]))
         amt = row["amount"]
 
         # Find rate for card used

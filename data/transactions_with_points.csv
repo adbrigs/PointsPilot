@@ -1,33 +1,57 @@
-date,merchant,amount,card_used,category,plaid_primary,plaid_detailed,confidence,logo_url,website,points_earned,best_card,best_rate,optimal_used,optimal_points,missed_points
-2025-10-16,CREDIT CARD 3333 PAYMENT *//,25.0,Freedom Unlimited,Other,LOAN_PAYMENTS,LOAN_PAYMENTS_CREDIT_CARD_PAYMENT,LOW,,,37.5,Chase Freedom Unlimited,1.5,True,37.5,0.0
-2025-10-16,Uber,5.4,Freedom Unlimited,Travel,TRANSPORTATION,TRANSPORTATION_TAXIS_AND_RIDE_SHARES,VERY_HIGH,https://plaid-merchant-logos.plaid.com/uber_1060.png,uber.com,8.100000000000001,Chase Sapphire Preferred,2.0,False,10.8,2.7
-2025-10-15,ACH Electronic CreditGUSTO PAY 123456,5850.0,Freedom Unlimited,Other,GENERAL_SERVICES,GENERAL_SERVICES_ACCOUNTING_AND_FINANCIAL_PLANNING,LOW,,,8775.0,Chase Freedom Unlimited,1.5,True,8775.0,0.0
-2025-10-15,CD DEPOSIT .INITIAL.,1000.0,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE,LOW,,,1500.0,Chase Freedom Unlimited,1.5,True,1500.0,0.0
-2025-10-14,Touchstone Climbing,78.5,Freedom Unlimited,Other,PERSONAL_CARE,PERSONAL_CARE_GYMS_AND_FITNESS_CENTERS,LOW,,,117.75,Chase Freedom Unlimited,1.5,True,117.75,0.0
-2025-10-14,United Airlines,500.0,Freedom Unlimited,Travel,TRAVEL,TRAVEL_FLIGHTS,VERY_HIGH,https://plaid-merchant-logos.plaid.com/united_airlines_1065.png,united.com,750.0,Chase Sapphire Preferred,2.0,False,1000.0,250.0
-2025-10-13,McDonald's,12.0,Freedom Unlimited,Restaurants,FOOD_AND_DRINK,FOOD_AND_DRINK_FAST_FOOD,VERY_HIGH,https://plaid-merchant-logos.plaid.com/mcdonalds_619.png,mcdonalds.com,18.0,Chase Sapphire Preferred,3.0,False,36.0,18.0
-2025-10-13,Starbucks,4.33,Freedom Unlimited,Restaurants,FOOD_AND_DRINK,FOOD_AND_DRINK_COFFEE,VERY_HIGH,https://plaid-merchant-logos.plaid.com/starbucks_956.png,starbucks.com,6.495,Chase Sapphire Preferred,3.0,False,12.99,6.5
-2025-10-12,FUN,89.4,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE,LOW,,,134.10000000000002,Chase Freedom Unlimited,1.5,True,134.1,-0.0
-2025-10-11,INTRST PYMNT,4.22,Freedom Unlimited,Other,INCOME,INCOME_WAGES,LOW,,,6.33,Chase Freedom Unlimited,1.5,True,6.33,0.0
-2025-10-01,United Airlines,500.0,Freedom Unlimited,Travel,TRAVEL,TRAVEL_FLIGHTS,VERY_HIGH,https://plaid-merchant-logos.plaid.com/united_airlines_1065.png,united.com,750.0,Chase Sapphire Preferred,2.0,False,1000.0,250.0
-2025-09-29,Uber,6.33,Freedom Unlimited,Travel,TRANSPORTATION,TRANSPORTATION_TAXIS_AND_RIDE_SHARES,VERY_HIGH,https://plaid-merchant-logos.plaid.com/uber_1060.png,uber.com,9.495000000000001,Chase Sapphire Preferred,2.0,False,12.66,3.16
-2025-09-26,Tectra Inc,500.0,Freedom Unlimited,Entertainment,ENTERTAINMENT,ENTERTAINMENT_SPORTING_EVENTS_AMUSEMENT_PARKS_AND_MUSEUMS,LOW,,,750.0,Chase Freedom Unlimited,1.5,True,750.0,0.0
-2025-09-25,AUTOMATIC PAYMENT - THANK,2078.5,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE,LOW,,,3117.75,Chase Freedom Unlimited,1.5,True,3117.75,0.0
-2025-09-25,KFC,500.0,Freedom Unlimited,Restaurants,FOOD_AND_DRINK,FOOD_AND_DRINK_FAST_FOOD,VERY_HIGH,https://plaid-merchant-logos.plaid.com/kfc_546.png,kfc.com,750.0,Chase Sapphire Preferred,3.0,False,1500.0,750.0
-2025-09-25,Madison Bicycle Shop,500.0,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_SPORTING_GOODS,LOW,,,750.0,Chase Freedom Unlimited,1.5,True,750.0,0.0
-2025-10-16,CREDIT CARD 3333 PAYMENT *//,25.0,Freedom Unlimited,Other,LOAN_PAYMENTS,LOAN_PAYMENTS_CREDIT_CARD_PAYMENT,LOW,,,37.5,Chase Freedom Unlimited,1.5,True,37.5,0.0
-2025-10-16,Uber,5.4,Freedom Unlimited,Travel,TRANSPORTATION,TRANSPORTATION_TAXIS_AND_RIDE_SHARES,VERY_HIGH,https://plaid-merchant-logos.plaid.com/uber_1060.png,uber.com,8.100000000000001,Chase Sapphire Preferred,2.0,False,10.8,2.7
-2025-10-15,ACH Electronic CreditGUSTO PAY 123456,5850.0,Freedom Unlimited,Other,GENERAL_SERVICES,GENERAL_SERVICES_ACCOUNTING_AND_FINANCIAL_PLANNING,LOW,,,8775.0,Chase Freedom Unlimited,1.5,True,8775.0,0.0
-2025-10-15,CD DEPOSIT .INITIAL.,1000.0,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE,LOW,,,1500.0,Chase Freedom Unlimited,1.5,True,1500.0,0.0
-2025-10-14,Touchstone Climbing,78.5,Freedom Unlimited,Other,PERSONAL_CARE,PERSONAL_CARE_GYMS_AND_FITNESS_CENTERS,LOW,,,117.75,Chase Freedom Unlimited,1.5,True,117.75,0.0
-2025-10-14,United Airlines,500.0,Freedom Unlimited,Travel,TRAVEL,TRAVEL_FLIGHTS,VERY_HIGH,https://plaid-merchant-logos.plaid.com/united_airlines_1065.png,united.com,750.0,Chase Sapphire Preferred,2.0,False,1000.0,250.0
-2025-10-13,McDonald's,12.0,Freedom Unlimited,Restaurants,FOOD_AND_DRINK,FOOD_AND_DRINK_FAST_FOOD,VERY_HIGH,https://plaid-merchant-logos.plaid.com/mcdonalds_619.png,mcdonalds.com,18.0,Chase Sapphire Preferred,3.0,False,36.0,18.0
-2025-10-13,Starbucks,4.33,Freedom Unlimited,Restaurants,FOOD_AND_DRINK,FOOD_AND_DRINK_COFFEE,VERY_HIGH,https://plaid-merchant-logos.plaid.com/starbucks_956.png,starbucks.com,6.495,Chase Sapphire Preferred,3.0,False,12.99,6.5
-2025-10-12,FUN,89.4,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE,LOW,,,134.10000000000002,Chase Freedom Unlimited,1.5,True,134.1,-0.0
-2025-10-11,INTRST PYMNT,4.22,Freedom Unlimited,Other,INCOME,INCOME_WAGES,LOW,,,6.33,Chase Freedom Unlimited,1.5,True,6.33,0.0
-2025-10-01,United Airlines,500.0,Freedom Unlimited,Travel,TRAVEL,TRAVEL_FLIGHTS,VERY_HIGH,https://plaid-merchant-logos.plaid.com/united_airlines_1065.png,united.com,750.0,Chase Sapphire Preferred,2.0,False,1000.0,250.0
-2025-09-29,Uber,6.33,Freedom Unlimited,Travel,TRANSPORTATION,TRANSPORTATION_TAXIS_AND_RIDE_SHARES,VERY_HIGH,https://plaid-merchant-logos.plaid.com/uber_1060.png,uber.com,9.495000000000001,Chase Sapphire Preferred,2.0,False,12.66,3.16
-2025-09-26,Tectra Inc,500.0,Freedom Unlimited,Entertainment,ENTERTAINMENT,ENTERTAINMENT_SPORTING_EVENTS_AMUSEMENT_PARKS_AND_MUSEUMS,LOW,,,750.0,Chase Freedom Unlimited,1.5,True,750.0,0.0
-2025-09-25,AUTOMATIC PAYMENT - THANK,2078.5,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE,LOW,,,3117.75,Chase Freedom Unlimited,1.5,True,3117.75,0.0
-2025-09-25,KFC,500.0,Freedom Unlimited,Restaurants,FOOD_AND_DRINK,FOOD_AND_DRINK_FAST_FOOD,VERY_HIGH,https://plaid-merchant-logos.plaid.com/kfc_546.png,kfc.com,750.0,Chase Sapphire Preferred,3.0,False,1500.0,750.0
-2025-09-25,Madison Bicycle Shop,500.0,Freedom Unlimited,Shopping,GENERAL_MERCHANDISE,GENERAL_MERCHANDISE_SPORTING_GOODS,LOW,,,750.0,Chase Freedom Unlimited,1.5,True,750.0,0.0
+date,merchant,amount,category,card_used,points_earned,best_card,best_rate,optimal_used,optimal_points,missed_points
+2025-10-16,Uber,5.4,TRANSPORTATION,Chase Freedom Unlimited,8.100000000000001,Chase Freedom Unlimited,1.5,True,8.1,-0.0
+2025-10-15,ACH Electronic CreditGUSTO PAY 123456,5850.0,GENERAL_SERVICES,Chase Freedom Unlimited,0.0,,0.0,False,0.0,0.0
+2025-10-15,CD DEPOSIT .INITIAL.,1000.0,GENERAL_MERCHANDISE,Chase Freedom Unlimited,1500.0,Chase Freedom Unlimited,1.5,True,1500.0,0.0
+2025-10-14,Touchstone Climbing,78.5,PERSONAL_CARE,Chase Freedom Unlimited,0.0,,0.0,False,0.0,0.0
+2025-10-14,United Airlines,500.0,TRAVEL,Chase Freedom Unlimited,750.0,Chase Sapphire Preferred,2.0,False,1000.0,250.0
+2025-10-13,McDonald's,12.0,FOOD_AND_DRINK,Chase Freedom Unlimited,18.0,Chase Sapphire Preferred,3.0,False,36.0,18.0
+2025-10-13,Starbucks,4.33,FOOD_AND_DRINK,Chase Freedom Unlimited,6.495,Chase Sapphire Preferred,3.0,False,12.99,6.5
+2025-10-12,FUN,89.4,GENERAL_MERCHANDISE,Chase Freedom Unlimited,134.10000000000002,Chase Freedom Unlimited,1.5,True,134.1,-0.0
+2025-10-01,United Airlines,500.0,TRAVEL,Chase Freedom Unlimited,750.0,Chase Sapphire Preferred,2.0,False,1000.0,250.0
+2025-09-29,Uber,6.33,TRANSPORTATION,Chase Freedom Unlimited,9.495000000000001,Chase Freedom Unlimited,1.5,True,9.5,0.0
+2025-09-26,Tectra Inc,500.0,ENTERTAINMENT,Chase Freedom Unlimited,750.0,Chase Freedom Unlimited,1.5,True,750.0,0.0
+2025-09-25,AUTOMATIC PAYMENT - THANK,2078.5,GENERAL_MERCHANDISE,Chase Freedom Unlimited,3117.75,Chase Freedom Unlimited,1.5,True,3117.75,0.0
+2025-09-25,KFC,500.0,FOOD_AND_DRINK,Chase Freedom Unlimited,750.0,Chase Sapphire Preferred,3.0,False,1500.0,750.0
+2025-09-25,Madison Bicycle Shop,500.0,GENERAL_MERCHANDISE,Chase Freedom Unlimited,750.0,Chase Freedom Unlimited,1.5,True,750.0,0.0
+2025-10-16,Uber,5.4,TRANSPORTATION,Chase Sapphire Preferred,5.4,Chase Freedom Unlimited,1.5,False,8.1,2.7
+2025-10-15,ACH Electronic CreditGUSTO PAY 123456,5850.0,GENERAL_SERVICES,Chase Sapphire Preferred,0.0,,0.0,False,0.0,0.0
+2025-10-15,CD DEPOSIT .INITIAL.,1000.0,GENERAL_MERCHANDISE,Chase Sapphire Preferred,0.0,Chase Freedom Unlimited,1.5,False,1500.0,1500.0
+2025-10-14,Touchstone Climbing,78.5,PERSONAL_CARE,Chase Sapphire Preferred,0.0,,0.0,False,0.0,0.0
+2025-10-14,United Airlines,500.0,TRAVEL,Chase Sapphire Preferred,1000.0,Chase Sapphire Preferred,2.0,True,1000.0,0.0
+2025-10-13,McDonald's,12.0,FOOD_AND_DRINK,Chase Sapphire Preferred,36.0,Chase Sapphire Preferred,3.0,True,36.0,0.0
+2025-10-13,Starbucks,4.33,FOOD_AND_DRINK,Chase Sapphire Preferred,12.99,Chase Sapphire Preferred,3.0,True,12.99,0.0
+2025-10-12,FUN,89.4,GENERAL_MERCHANDISE,Chase Sapphire Preferred,0.0,Chase Freedom Unlimited,1.5,False,134.1,134.1
+2025-10-01,United Airlines,500.0,TRAVEL,Chase Sapphire Preferred,1000.0,Chase Sapphire Preferred,2.0,True,1000.0,0.0
+2025-09-29,Uber,6.33,TRANSPORTATION,Chase Sapphire Preferred,6.33,Chase Freedom Unlimited,1.5,False,9.5,3.17
+2025-09-26,Tectra Inc,500.0,ENTERTAINMENT,Chase Sapphire Preferred,500.0,Chase Freedom Unlimited,1.5,False,750.0,250.0
+2025-09-25,AUTOMATIC PAYMENT - THANK,2078.5,GENERAL_MERCHANDISE,Chase Sapphire Preferred,0.0,Chase Freedom Unlimited,1.5,False,3117.75,3117.75
+2025-09-25,KFC,500.0,FOOD_AND_DRINK,Chase Sapphire Preferred,1500.0,Chase Sapphire Preferred,3.0,True,1500.0,0.0
+2025-09-25,Madison Bicycle Shop,500.0,GENERAL_MERCHANDISE,Chase Sapphire Preferred,0.0,Chase Freedom Unlimited,1.5,False,750.0,750.0
+2025-10-16,Uber,5.4,TRANSPORTATION,Citi AAdvantage Platinum Select,5.4,Chase Freedom Unlimited,1.5,False,8.1,2.7
+2025-10-15,ACH Electronic CreditGUSTO PAY 123456,5850.0,GENERAL_SERVICES,Citi AAdvantage Platinum Select,0.0,,0.0,False,0.0,0.0
+2025-10-15,CD DEPOSIT .INITIAL.,1000.0,GENERAL_MERCHANDISE,Citi AAdvantage Platinum Select,0.0,Chase Freedom Unlimited,1.5,False,1500.0,1500.0
+2025-10-14,Touchstone Climbing,78.5,PERSONAL_CARE,Citi AAdvantage Platinum Select,0.0,,0.0,False,0.0,0.0
+2025-10-14,United Airlines,500.0,TRAVEL,Citi AAdvantage Platinum Select,1000.0,Chase Sapphire Preferred,2.0,False,1000.0,0.0
+2025-10-13,McDonald's,12.0,FOOD_AND_DRINK,Citi AAdvantage Platinum Select,12.0,Chase Sapphire Preferred,3.0,False,36.0,24.0
+2025-10-13,Starbucks,4.33,FOOD_AND_DRINK,Citi AAdvantage Platinum Select,4.33,Chase Sapphire Preferred,3.0,False,12.99,8.66
+2025-10-12,FUN,89.4,GENERAL_MERCHANDISE,Citi AAdvantage Platinum Select,0.0,Chase Freedom Unlimited,1.5,False,134.1,134.1
+2025-10-01,United Airlines,500.0,TRAVEL,Citi AAdvantage Platinum Select,1000.0,Chase Sapphire Preferred,2.0,False,1000.0,0.0
+2025-09-29,Uber,6.33,TRANSPORTATION,Citi AAdvantage Platinum Select,6.33,Chase Freedom Unlimited,1.5,False,9.5,3.17
+2025-09-26,Tectra Inc,500.0,ENTERTAINMENT,Citi AAdvantage Platinum Select,500.0,Chase Freedom Unlimited,1.5,False,750.0,250.0
+2025-09-25,AUTOMATIC PAYMENT - THANK,2078.5,GENERAL_MERCHANDISE,Citi AAdvantage Platinum Select,0.0,Chase Freedom Unlimited,1.5,False,3117.75,3117.75
+2025-09-25,KFC,500.0,FOOD_AND_DRINK,Citi AAdvantage Platinum Select,500.0,Chase Sapphire Preferred,3.0,False,1500.0,1000.0
+2025-09-25,Madison Bicycle Shop,500.0,GENERAL_MERCHANDISE,Citi AAdvantage Platinum Select,0.0,Chase Freedom Unlimited,1.5,False,750.0,750.0
+2025-10-16,Uber,5.4,TRANSPORTATION,Chase Freedom Flex,0.0,Chase Freedom Unlimited,1.5,False,8.1,8.1
+2025-10-15,ACH Electronic CreditGUSTO PAY 123456,5850.0,GENERAL_SERVICES,Chase Freedom Flex,0.0,,0.0,False,0.0,0.0
+2025-10-15,CD DEPOSIT .INITIAL.,1000.0,GENERAL_MERCHANDISE,Chase Freedom Flex,0.0,Chase Freedom Unlimited,1.5,False,1500.0,1500.0
+2025-10-14,Touchstone Climbing,78.5,PERSONAL_CARE,Chase Freedom Flex,0.0,,0.0,False,0.0,0.0
+2025-10-14,United Airlines,500.0,TRAVEL,Chase Freedom Flex,0.0,Chase Sapphire Preferred,2.0,False,1000.0,1000.0
+2025-10-13,McDonald's,12.0,FOOD_AND_DRINK,Chase Freedom Flex,0.0,Chase Sapphire Preferred,3.0,False,36.0,36.0
+2025-10-13,Starbucks,4.33,FOOD_AND_DRINK,Chase Freedom Flex,0.0,Chase Sapphire Preferred,3.0,False,12.99,12.99
+2025-10-12,FUN,89.4,GENERAL_MERCHANDISE,Chase Freedom Flex,0.0,Chase Freedom Unlimited,1.5,False,134.1,134.1
+2025-10-01,United Airlines,500.0,TRAVEL,Chase Freedom Flex,0.0,Chase Sapphire Preferred,2.0,False,1000.0,1000.0
+2025-09-29,Uber,6.33,TRANSPORTATION,Chase Freedom Flex,0.0,Chase Freedom Unlimited,1.5,False,9.5,9.5
+2025-09-26,Tectra Inc,500.0,ENTERTAINMENT,Chase Freedom Flex,0.0,Chase Freedom Unlimited,1.5,False,750.0,750.0
+2025-09-25,AUTOMATIC PAYMENT - THANK,2078.5,GENERAL_MERCHANDISE,Chase Freedom Flex,0.0,Chase Freedom Unlimited,1.5,False,3117.75,3117.75
+2025-09-25,KFC,500.0,FOOD_AND_DRINK,Chase Freedom Flex,0.0,Chase Sapphire Preferred,3.0,False,1500.0,1500.0
+2025-09-25,Madison Bicycle Shop,500.0,GENERAL_MERCHANDISE,Chase Freedom Flex,0.0,Chase Freedom Unlimited,1.5,False,750.0,750.0
