@@ -201,7 +201,6 @@ else:
 # ==========================================================
 # BEST CARD SNAPSHOT (YAML-based)
 # ==========================================================
-st.subheader("🏆 Best Card by Category")
 
 try:
     reward_rules_df = load_rules()  # YAML → DataFrame
