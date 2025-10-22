@@ -5,3 +5,8 @@ numpy
 plotly
 pytest
 plaid-python
+requests
+python-dateutil
+typing-extensions
+cachetools
+watchdog
