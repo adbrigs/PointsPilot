@@ -91,24 +91,36 @@ else:
 # Main Dashboard
 # -------------------------------------------------
 st.title("💳 PointsPilot Dashboard")
-st.markdown("Visualize your transactions, earned points, and optimization opportunities.")
+st.markdown("Visualize your reward earnings per transaction, and gain insights into how you can earn more!")
 
 if df.empty:
     st.warning("No transactions found for the selected filters.")
     st.stop()
 
-# -------------------------------------------------
-# KPI Cards
-# -------------------------------------------------
-col1, col2, col3 = st.columns(3)
+# ===========================
+# KPI SECTION
+# ===========================
 
-total_points = df["points_earned"].sum()
-missed_points = df["missed_points"].sum()
-optimized_pct = (df["optimal_used"].mean() * 100)
+# Compute KPIs
+total_spent = df["amount"].sum()
+total_points_earned = df["points_earned"].sum()
+total_optimal_points = df["optimal_points"].sum()
 
-col1.metric("💰 Total Points Earned", f"{total_points:,.0f}")
-col2.metric("🚀 Missed Points", f"{missed_points:,.0f}")
-col3.metric("✅ Optimized Usage", f"{optimized_pct:.1f}%")
+# Avoid division by zero
+optimization_rate = (total_points_earned / total_optimal_points * 100) if total_optimal_points > 0 else 0
+missed_points = total_optimal_points - total_points_earned
+points_per_dollar = (total_points_earned / total_spent) if total_spent > 0 else 0
+optimal_points_per_dollar = (total_optimal_points / total_spent) if total_spent > 0 else 0
+
+# KPI layout
+col1, col2, col3, col4, col5, col6 = st.columns(6)
+
+col1.metric("✅ Points Earned", f"{int(total_points_earned):,}")
+col2.metric("🌟 Optimal Points", f"{int(total_optimal_points):,}")
+col3.metric("⚠️ Missed Points", f"{int(missed_points):,}")
+col4.metric("% Optimized", f"{optimization_rate:.1f}%")
+col5.metric("💸 Points per $", f"{points_per_dollar:.2f}")
+col6.metric("🚀 Optimal Points per $", f"{optimal_points_per_dollar:.2f}")
 
 # -------------------------------------------------
 # Insights Section (moved up)
