@@ -1,45 +1,61 @@
 cards:
-  - card_name: Chase Sapphire Preferred
+  - card_name: Chase Sapphire
     rewards:
-      Restaurants: 3
-      Travel: 2
+      Restaurants & Bars: 3
+      Bars & Nightlife: 3
+      Travel & Vacation: 2
+      Ubers/Septa: 2
       Entertainment: 1
-      Transportation: 1
-      General_Services: 1
-      Personal_Care: 1
+      Recreation: 1
+      Groceries: 1
+      Shops: 1
+      Misc: 1
       Other: 1
 
-  - card_name: Chase Freedom Unlimited
+  - card_name: Freedom Unlimited
     rewards:
       Drugstores: 3
-      Shopping: 1.5
-      Restaurants: 1.5
-      Travel: 1.5
+      Restaurants & Bars: 3
+      Bars & Nightlife: 1.5
+      Groceries: 1.5
+      Travel & Vacation: 1.5
+      Ubers/Septa: 1.5
+      Shops: 1.5
       Entertainment: 1.5
-      Transportation: 1.5
-      General_Services: 1.5
-      Personal_Care: 1.5
+      Recreation: 1.5
+      Clothing: 1.5
+      Misc: 1.5
       Other: 1.5
-      None: 1.5
 
-  - card_name: Chase Freedom Flex
+  - card_name: Freedom Flex
     rewards:
-      Restaurants: 3
       Drugstores: 3
+      Restaurants & Bars: 3
+      Bars & Nightlife: 3
       Entertainment: 1
-      Travel: 1
-      Transportation: 1
-      General_Services: 1
-      Personal_Care: 1
+      Recreation: 1
+      Groceries: 1
+      Ubers/Septa: 1
+      Travel & Vacation: 1
+      Misc: 1
       Other: 1
 
-  - card_name: Citi AAdvantage Platinum Select
+  - card_name: Citi®/AAdvantage® Platinum Select® World Elite Mastercard®
     rewards:
-      Gas: 2
-      Travel: 2
-      Restaurants: 1
-      Entertainment: 1
-      Transportation: 1
-      General_Services: 1
-      Personal_Care: 1
+      Car/Gas: 2
+      Ubers/Septa: 2
+      Travel & Vacation: 2
+      Restaurants & Bars: 2
+      Bars & Nightlife: 2
+      Shops: 1
+      Groceries: 1
+      Misc: 1
       Other: 1
+
+merchant_overrides:
+  - merchant: apple.com-bill
+    card_name: Chase Sapphire
+    multiplier: 3
+  - merchant: apple.com/bill
+    card_name: Chase Sapphire
+    multiplier: 3

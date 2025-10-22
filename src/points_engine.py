@@ -1,9 +1,10 @@
 """
-PointsPilot - Points Engine
----------------------------
-Loads Plaid transaction data, applies earning rules from YAML,
-and saves an enriched CSV (transactions_with_points.csv)
-for the Streamlit dashboard.
+PointsPilot - Points Engine (Local CSV Mode)
+--------------------------------------------
+Uses local data/copilot_transactions.csv as input,
+filters for credit-card transactions only,
+applies earning rules from YAML, and saves an enriched
+transactions_with_points.csv for the Streamlit dashboard.
 """
 
 import os
@@ -15,34 +16,37 @@ import yaml
 # Load earning rules (YAML)
 # --------------------------------------------------
 def load_rules():
-    """
-    Loads YAML reward rules and flattens into a DataFrame
-    with columns: [card_name, category, multiplier].
-    """
     yaml_path = os.path.join(os.path.dirname(__file__), "earn_rules.yaml")
-
     if not os.path.exists(yaml_path):
         raise FileNotFoundError(f"earn_rules.yaml not found at {yaml_path}")
 
     with open(yaml_path, "r") as f:
         data = yaml.safe_load(f)
 
-    # Flatten structure
     records = []
     for card in data.get("cards", []):
         card_name = card.get("card_name")
         for category, multiplier in card.get("rewards", {}).items():
-            records.append({
-                "card_name": card_name,
-                "category": category,
-                "multiplier": multiplier
-            })
-
+            records.append(
+                {"card_name": card_name, "category": category, "multiplier": multiplier}
+            )
     return pd.DataFrame(records)
 
 
 # --------------------------------------------------
-# Normalize card names for comparison
+# Load merchant-based overrides (from YAML)
+# --------------------------------------------------
+def load_merchant_overrides():
+    yaml_path = os.path.join(os.path.dirname(__file__), "earn_rules.yaml")
+    if not os.path.exists(yaml_path):
+        return []
+    with open(yaml_path, "r") as f:
+        data = yaml.safe_load(f)
+    return data.get("merchant_overrides", [])
+
+
+# --------------------------------------------------
+# Normalize card names
 # --------------------------------------------------
 def normalize_card_name(name: str) -> str:
     if not isinstance(name, str):
@@ -68,88 +72,43 @@ def normalize_card_name(name: str) -> str:
 
 
 # --------------------------------------------------
-# Normalize category names (Plaid → YAML)
+# Normalize category names (Copilot → YAML)
 # --------------------------------------------------
 def normalize_category_name(cat: str) -> str:
     if not isinstance(cat, str):
         return "Other"
     cat = cat.strip().lower()
-
     mapping = {
-        # 🥗 Food & Drink
-        "food_and_drink": "Restaurants",
-        "food_and_drink_fast_food": "Restaurants",
-        "food_and_drink_restaurant": "Restaurants",
-        "food_and_drink_coffee_shop": "Restaurants",
-        "food_and_drink_bar": "Restaurants",
-
-        # 🛍️ Shopping / Retail
-        "general_merchandise": "Shopping",
-        "general_merchandise_sporting_goods": "Shopping",
-        "general_merchandise_clothing": "Shopping",
-        "general_merchandise_home_improvement": "Shopping",
-        "general_merchandise_online": "Shopping",
-        "general_merchandise_other": "Shopping",
-
-        # ✈️ Travel
-        "travel": "Travel",
-        "travel_air": "Travel",
-        "travel_car_rental": "Travel",
-        "travel_lodging": "Travel",
-        "travel_cruise": "Travel",
-        "travel_other": "Travel",
-
-        # 🎭 Entertainment & Recreation
-        "entertainment": "Entertainment",
-        "recreation": "Entertainment",
-        "arts_and_entertainment": "Entertainment",
-        "movies_and_music": "Entertainment",
-
-        # ⛽ Gas / Auto
-        "gas": "Gas",
-        "automotive_fuel": "Gas",
-        "auto": "Gas",
-        "auto_transportation": "Gas",
-
-        # 💊 Drugstores / Health
+        "bars & nightlife": "Restaurants & Bars",
+        "restaurants & bars": "Restaurants & Bars",
+        "car/gas": "Car/Gas",
+        "groceries": "Groceries",
         "drugstores": "Drugstores",
-        "pharmacy": "Drugstores",
-        "healthcare": "Drugstores",
-        "medical_services": "Drugstores",
-
-        # 🧖 Personal Care / General Services → fallback "Other"
-        "personal_care": "Other",
-        "personal_care_hair_salon": "Other",
-        "personal_care_spa": "Other",
-        "general_services": "Other",
-        "general_services_other": "Other",
-        "service": "Other",
-        "service_financial": "Other",
-
-        # 💼 Business / Government / Uncategorized
-        "government": "Other",
-        "bank_fees": "Other",
-        "loans": "Other",
-        "income": "Other",
-        "none": "Other",
-        "other": "Other",
+        "uobers/septa": "Ubers/Septa",
+        "ubers/septa": "Ubers/Septa",
+        "travel & vacation": "Travel & Vacation",
+        "shops": "Shops",
+        "clothing": "Clothing",
+        "entertainment": "Entertainment",
+        "recreation": "Recreation",
+        "gifts": "Shopping",
+        "subscriptions": "Misc",
+        "insurance": "Misc",
+        "health care": "Drugstores",
+        "home improvement": "Shopping",
+        "loans": "Misc",
+        "rent/utilities": "Misc",
+        "gym": "Recreation",
+        "personal care": "Personal Care",
+        "misc": "Other",
     }
-
     return mapping.get(cat, cat.replace("_", " ").title())
 
 
 # --------------------------------------------------
-# Simple fallback rate logic per card
+# Fallback rate logic
 # --------------------------------------------------
 def get_card_rate(card_norm: str, cat_norm: str, rules_df: pd.DataFrame) -> float:
-    """
-    Returns the multiplier for a given card/category, with simple fallbacks:
-    - Exact category match → use YAML value
-    - Otherwise:
-        Freedom Unlimited → 1.5×
-        Sapphire Preferred / Flex / AAdvantage → 1×
-    """
-    # Try exact match first
     match = rules_df[
         (rules_df["card_name"].apply(normalize_card_name) == card_norm)
         & (rules_df["category"].str.lower() == cat_norm.lower())
@@ -157,79 +116,145 @@ def get_card_rate(card_norm: str, cat_norm: str, rules_df: pd.DataFrame) -> floa
     if not match.empty:
         return float(match["multiplier"].max())
 
-    # Simple fallback defaults
     if "freedom unlimited" in card_norm:
         return 1.5
     if any(x in card_norm for x in ["sapphire preferred", "freedom flex", "aadvantage"]):
         return 1.0
-
     return 1.0
 
 
 # --------------------------------------------------
-# Compute points from transactions and save CSV
+# Compute points using local CSV only
 # --------------------------------------------------
 def compute_points(transactions_path: str = None):
     base_path = os.path.dirname(os.path.dirname(__file__))
     data_dir = os.path.join(base_path, "data")
     os.makedirs(data_dir, exist_ok=True)
 
-    transactions_path = transactions_path or os.path.join(data_dir, "transactions.csv")
+    transactions_path = transactions_path or os.path.join(data_dir, "copilot_transactions.csv")
     output_path = os.path.join(data_dir, "transactions_with_points.csv")
 
-    # Load transactions
     if not os.path.exists(transactions_path):
         raise FileNotFoundError(f"Transactions file not found: {transactions_path}")
 
+    # --- Load data ---
     df = pd.read_csv(transactions_path)
-    required_cols = ["date", "merchant", "amount", "category", "card_used"]
-    for col in required_cols:
-        if col not in df.columns:
-            raise ValueError(f"Missing column '{col}' in transactions.csv")
+    df.columns = df.columns.str.strip().str.lower()
 
-    # Load YAML reward rules
+    # Map key fields
+    df["merchant"] = df.get("name", "")
+    df["card_used"] = df.get("account", "")
+    df["category"] = df.get("category", "")
+    df["amount"] = df.get("amount", 0)
+    df["date"] = df.get("date", "")
+
+    # ✅ Filter to recognized cards
+    recognized_cards = [
+        "Chase Sapphire",
+        "Freedom Unlimited",
+        "Freedom Flex",
+        "Citi®/AAdvantage® Platinum Select® World Elite Mastercard®",
+    ]
+    df = df[df["card_used"].str.contains("|".join(recognized_cards), case=False, na=False)]
+    if df.empty:
+        raise ValueError("No recognized credit-card transactions found.")
+    print(f"✅ Loaded {len(df)} transactions from recognized credit cards.")
+
     rules_df = load_rules()
+    merchant_overrides = load_merchant_overrides()
 
-    # Compute
-    df["points_earned"] = 0.0
-    df["best_card"] = None
-    df["best_rate"] = 0.0
+    # Predefine columns
+    for col in ["best_cards_list", "best_card", "best_rate", "points_earned"]:
+        if col not in df.columns:
+            df[col] = None
 
+    # ------------------------------------------------------------
+    # --- Core computation loop ---------------------------------
+    # ------------------------------------------------------------
     for i, row in df.iterrows():
+        merchant = str(row.get("merchant", "")).lower()
         cat = normalize_category_name(str(row["category"]))
-        amt = row["amount"]
-        card_norm = normalize_card_name(row["card_used"])
+        amt = float(row["amount"])
+        card_norm = normalize_card_name(str(row["card_used"]))
 
-        # Use fallback-aware rate
         used_rate = get_card_rate(card_norm, cat, rules_df)
+        best_card = None
+        best_rate = 0.0
+        override_applied = False
 
-        # Find best card for that category
-        best = rules_df[rules_df["category"].str.lower() == cat.lower()]
-        if not best.empty:
-            best_row = best.loc[best["multiplier"].idxmax()]
-            df.at[i, "best_card"] = best_row["card_name"]
-            df.at[i, "best_rate"] = best_row["multiplier"]
+        # --- Merchant overrides ---
+        for override in merchant_overrides:
+            merch_match = override["merchant"].lower() in merchant
+            if merch_match:
+                best_card = override["card_name"]
+                best_rate = override["multiplier"]
+                if override["card_name"].lower() in card_norm:
+                    used_rate = override["multiplier"]
+                    print(f"🎯 Override applied: {merchant} → {override['card_name']} @ {override['multiplier']}×")
+                override_applied = True
+                break
+
+        # --- Determine best card(s) normally ---
+        if not override_applied:
+            best = rules_df[rules_df["category"].str.lower() == cat.lower()]
+            if not best.empty:
+                max_mult = best["multiplier"].max()
+                top_cards = best.loc[best["multiplier"] == max_mult, "card_name"].tolist()
+                df.at[i, "best_cards_list"] = [normalize_card_name(c) for c in top_cards]
+                df.at[i, "best_card"] = ", ".join(top_cards)
+                df.at[i, "best_rate"] = max_mult
+            else:
+                df.at[i, "best_cards_list"] = []
+                df.at[i, "best_card"] = "Unmatched"
+                df.at[i, "best_rate"] = 1.0
         else:
-            # If no category found, default to highest base rate card
-            df.at[i, "best_card"] = "Chase Freedom Unlimited"
-            df.at[i, "best_rate"] = 1.5
+            df.at[i, "best_card"] = best_card
+            df.at[i, "best_rate"] = best_rate
 
-        df.at[i, "points_earned"] = amt * used_rate
+        # --- Points earned ---
+        df.at[i, "points_earned"] = round(amt * used_rate, 2)
 
-    # Optimal card check
-    df["optimal_used"] = df.apply(
-        lambda x: normalize_card_name(x["card_used"]) == normalize_card_name(x["best_card"]),
-        axis=1
-    )
+    # ------------------------------------------------------------
+    # --- Optimal card check (multi-card aware) ------------------
+    # ------------------------------------------------------------
+    def is_optimal(x):
+        used = normalize_card_name(x["card_used"])
+        best_cards = x.get("best_cards_list", [])
+        if isinstance(best_cards, list) and best_cards:
+            return used in best_cards
+        return normalize_card_name(x["card_used"]) == normalize_card_name(x.get("best_card", ""))
 
-    # Optimal + missed
+    df["optimal_used"] = df.apply(is_optimal, axis=1)
+
+    # ------------------------------------------------------------
+    # --- Points math (safe numeric conversion) ------------------
+    # ------------------------------------------------------------
+    df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0)
+    df["best_rate"] = pd.to_numeric(df["best_rate"], errors="coerce").fillna(1.0)
+    df["points_earned"] = pd.to_numeric(df["points_earned"], errors="coerce").fillna(0)
+
     df["optimal_points"] = (df["amount"] * df["best_rate"]).round(2)
     df["missed_points"] = (df["optimal_points"] - df["points_earned"]).round(2)
     df.loc[df["missed_points"] < 0, "missed_points"] = 0
 
-    # Save enriched CSV
+    # Cleanup
+    if "best_cards_list" in df.columns:
+        df.drop(columns=["best_cards_list"], inplace=True)
+
+    # --- Save ---
     df.to_csv(output_path, index=False)
-    print(f"✅ Saved {len(df)} transactions with points → {output_path}")
+
+    # --- Summary ---
+    total_points = df["points_earned"].sum()
+    total_missed = df["missed_points"].sum()
+    opt_rate = round(100 * (1 - (total_missed / (total_points + total_missed + 1e-9))), 2)
+
+    print("\n✅ Points Summary")
+    print(f"   • Transactions processed: {len(df)}")
+    print(f"   • Total points earned: {total_points:,.0f}")
+    print(f"   • Missed points: {total_missed:,.0f}")
+    print(f"   • Optimization rate: {opt_rate}%")
+    print(f"   → Saved to {output_path}\n")
 
     return df
 
@@ -238,10 +263,6 @@ def compute_points(transactions_path: str = None):
 # Best Card per Category
 # --------------------------------------------------
 def best_card_per_category(reward_rules_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Returns the single best card for each category based purely on earn_rules.yaml.
-    reward_rules_df columns: ['card_name', 'category', 'multiplier']
-    """
     if reward_rules_df.empty:
         return pd.DataFrame(columns=["category", "card_name", "multiplier"])
 
@@ -250,9 +271,6 @@ def best_card_per_category(reward_rules_df: pd.DataFrame) -> pd.DataFrame:
         .reset_index(drop=True)
         .sort_values("category")
     )
-
-    hide = {"All", "None"}
-    best_cards = best_cards[~best_cards["category"].isin(hide)]
     return best_cards[["category", "card_name", "multiplier"]]
 
 
@@ -260,4 +278,5 @@ def best_card_per_category(reward_rules_df: pd.DataFrame) -> pd.DataFrame:
 # Entry Point
 # --------------------------------------------------
 if __name__ == "__main__":
+    print("📂 Running in Local CSV Mode (Copilot format detected)...")
     compute_points()

@@ -10,7 +10,7 @@ import sys
 import time
 import pandas as pd
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ==========================================================
 # PATH FIX (for Streamlit Cloud + local compatibility)
@@ -25,7 +25,6 @@ if BASE_DIR not in sys.path:
 # ==========================================================
 # IMPORT BACKEND MODULES
 # ==========================================================
-from plaid_pull import get_sandbox_transactions
 from points_engine import compute_points, load_rules, best_card_per_category
 from insights import generate_insights
 from visuals.charts import points_per_card_chart
@@ -36,6 +35,7 @@ from visuals.ui_sections import render_best_card_snapshot
 # ==========================================================
 DATA_DIR = os.path.join(BASE_DIR, "data")
 POINTS_PATH = os.path.join(DATA_DIR, "transactions_with_points.csv")
+COPILOT_PATH = os.path.join(DATA_DIR, "copilot_transactions.csv")
 
 # ==========================================================
 # STREAMLIT CONFIG
@@ -51,36 +51,44 @@ st.set_page_config(
 # ==========================================================
 @st.cache_data
 def load_data():
+    """
+    Load computed transactions_with_points.csv, or compute it
+    from copilot_transactions.csv if missing.
+    """
     if not os.path.exists(POINTS_PATH):
-        st.warning("No data file found — generating from Plaid Sandbox...")
+        if not os.path.exists(COPILOT_PATH):
+            st.error("❌ No data file found. Please place copilot_transactions.csv in /data.")
+            st.stop()
+        st.info("⚙️ Generating transactions_with_points.csv from Copilot data...")
         compute_points()
-    df = pd.read_csv(POINTS_PATH)
-    return df
+    return pd.read_csv(POINTS_PATH)
 
 
 # ==========================================================
 # SIDEBAR
 # ==========================================================
 st.sidebar.title("✈️ PointsPilot")
-st.sidebar.markdown("**Manage your points & optimize every purchase.**")
+st.sidebar.markdown("**Optimize your cards and maximize every purchase.**")
 
-if st.sidebar.button("🔁 Refresh All Data"):
-    with st.spinner("Refreshing Plaid sandbox data..."):
+# Manual refresh
+if st.sidebar.button("🔁 Recalculate Points"):
+    with st.spinner("Recomputing from copilot_transactions.csv..."):
         try:
-            get_sandbox_transactions()
             compute_points()
-            st.success("✅ Data refreshed successfully!")
+            st.success("✅ Points recalculated successfully!")
             time.sleep(1)
             st.rerun()
         except Exception as e:
-            st.error(f"❌ Error refreshing data: {e}")
+            st.error(f"❌ Error recalculating: {e}")
 
 st.sidebar.markdown("---")
 
-# Load data so filters can populate
+# Load data for filters
 df = load_data()
 
-# Category filter (multi-select)
+# ==========================================================
+# CATEGORY FILTER
+# ==========================================================
 categories = sorted(df["category"].dropna().unique())
 selected_categories = st.sidebar.multiselect(
     "📂 Filter by Category",
@@ -92,7 +100,49 @@ selected_categories = st.sidebar.multiselect(
 if selected_categories:
     df = df[df["category"].isin(selected_categories)]
 
-# Show last updated time
+# ==========================================================
+# DATE FILTER (default = last 30 days)
+# ==========================================================
+if "date" in df.columns and not df.empty:
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    min_date = df["date"].min().date()
+    max_date = df["date"].max().date()
+
+    st.sidebar.markdown("### 📅 Filter by Date")
+
+    # ✅ Default to last 30 days
+    default_end = max_date
+    default_start = max(min_date, default_end - timedelta(days=30))
+
+    # ✅ Safely handle date input
+    try:
+        start_date, end_date = st.sidebar.date_input(
+            "Select date range:",
+            [default_start, default_end],
+            min_value=min_date,
+            max_value=max_date
+        )
+    except Exception:
+        start_date = default_start
+        end_date = default_end
+
+    # ✅ Handle Streamlit returning tuple/list
+    if isinstance(start_date, (list, tuple)):
+        start_date, end_date = start_date
+
+    # ✅ Filter dataframe
+    df = df[
+        (df["date"].dt.date >= start_date)
+        & (df["date"].dt.date <= end_date)
+    ]
+
+    st.sidebar.markdown(
+        f"🗓 Showing data from **{start_date.strftime('%b %d, %Y')}** to **{end_date.strftime('%b %d, %Y')}**"
+    )
+
+# ==========================================================
+# LAST UPDATED TIMESTAMP
+# ==========================================================
 st.sidebar.markdown("---")
 st.sidebar.markdown("**Last Updated:**")
 if os.path.exists(POINTS_PATH):
@@ -101,11 +151,12 @@ if os.path.exists(POINTS_PATH):
 else:
     st.sidebar.markdown("No file yet.")
 
+
 # ==========================================================
 # MAIN DASHBOARD
 # ==========================================================
 st.title("💳 PointsPilot Dashboard")
-st.markdown("Visualize your reward earnings per transaction, and gain insights into how you can earn more!")
+st.markdown("Visualize your reward earnings, missed points, and top optimization opportunities.")
 
 if df.empty:
     st.warning("No transactions found for the selected filters.")
@@ -119,7 +170,6 @@ st.subheader("💳 Points Overview")
 total_spent = df["amount"].sum()
 total_points_earned = df["points_earned"].sum()
 total_optimal_points = df["optimal_points"].sum()
-
 optimization_rate = (total_points_earned / total_optimal_points * 100) if total_optimal_points > 0 else 0
 missed_points = total_optimal_points - total_points_earned
 points_per_dollar = (total_points_earned / total_spent) if total_spent > 0 else 0
@@ -139,23 +189,27 @@ col6.metric("🚀 Optimal Points per $", f"{optimal_points_per_dollar:.2f}")
 st.markdown("### 💡 Smart Insights")
 
 with st.expander("View Smart Insights", expanded=True):
-    insights_df = generate_insights(df)
+    try:
+        insights_df = generate_insights(df)
+        if not insights_df.empty:
+            st.markdown("#### 🔍 Personalized Optimization Tips")
+            for _, r in insights_df.iterrows():
+                icon = (
+                    "💳" if r["type"] == "card"
+                    else "⚠️" if r["type"] == "missed"
+                    else "🎯" if r["type"] == "category"
+                    else "✈️" if r["type"] == "redemption"
+                    else "✅"
+                )
+                st.info(f"{icon} {r['insight']}")
+        else:
+            st.info("No insights available yet — add more transactions or refresh data.")
+    except Exception as e:
+        st.warning(f"⚠️ Insights unavailable: {e}")
 
-    if not insights_df.empty:
-        st.markdown("#### 🔍 Personalized Optimization Tips")
-        for _, r in insights_df.iterrows():
-            icon = (
-                "💳" if r["type"] == "card"
-                else "⚠️" if r["type"] == "missed"
-                else "🎯" if r["type"] == "category"
-                else "✈️" if r["type"] == "redemption"
-                else "✅"
-            )
-            st.info(f"{icon} {r['insight']}")
-    else:
-        st.info("No insights available yet — add more transactions or refresh data.")
-
-    # Quick category improvement tip
+    # ======================================================
+    # QUICK WIN CATEGORY (safe mode)
+    # ======================================================
     cat_summary = (
         df.groupby("category")[["points_earned", "optimal_points", "missed_points"]]
         .sum()
@@ -165,10 +219,17 @@ with st.expander("View Smart Insights", expanded=True):
 
     if not cat_summary.empty:
         most_missed_cat = cat_summary.loc[cat_summary["missed_points"].idxmax(), "category"]
+
+        best_card_for_cat = "top-earning card"
+        if "best_card" in df.columns:
+            best_card_series = df.loc[df["category"] == most_missed_cat, "best_card"]
+            if not best_card_series.empty and len(best_card_series.mode()) > 0:
+                best_card_for_cat = best_card_series.mode()[0]
+
         st.markdown("#### ⚡ Quick Win")
         st.info(
             f"You're missing the most points in **{most_missed_cat}**. "
-            f"Try using your **{df.loc[df['category'] == most_missed_cat, 'best_card'].mode()[0]}** there."
+            f"Try using your **{best_card_for_cat}** there."
         )
 
 # ==========================================================
@@ -176,70 +237,78 @@ with st.expander("View Smart Insights", expanded=True):
 # ==========================================================
 st.subheader("📊 Category Breakdown")
 
-st.dataframe(
-    cat_summary.style.format({
-        "points_earned": "{:,.0f}",
-        "optimal_points": "{:,.0f}",
-        "missed_points": "{:,.0f}"
-    })
-)
+if "points_earned" in df.columns:
+    cat_summary = (
+        df.groupby("category")[["points_earned", "optimal_points", "missed_points"]]
+        .sum()
+        .reset_index()
+        .sort_values("points_earned", ascending=False)
+    )
+    st.dataframe(
+        cat_summary.style.format({
+            "points_earned": "{:,.0f}",
+            "optimal_points": "{:,.0f}",
+            "missed_points": "{:,.0f}"
+        })
+    )
+else:
+    st.warning("No points data available. Try recalculating.")
 
 # ==========================================================
 # POINTS PER CARD VISUAL
 # ==========================================================
 st.subheader("📈 Points per Card")
 
-view_mode = st.radio("View as:", ["Points", "Cash Value"], horizontal=True, label_visibility="collapsed")
-
-fig_points = points_per_card_chart(df)
-
-if fig_points is not None:
-    st.plotly_chart(fig_points, use_container_width=True)
-else:
-    st.warning("No data available for card visualization.")
-
-# ==========================================================
-# BEST CARD SNAPSHOT (YAML-based)
-# ==========================================================
-
 try:
-    reward_rules_df = load_rules()  # YAML → DataFrame
+    fig_points = points_per_card_chart(df)
+    if fig_points is not None:
+        st.plotly_chart(fig_points, use_container_width=True)
+    else:
+        st.warning("No data available for card visualization.")
+except Exception as e:
+    st.warning(f"⚠️ Could not load points per card chart: {e}")
+
+# ==========================================================
+# BEST CARD SNAPSHOT
+# ==========================================================
+try:
+    reward_rules_df = load_rules()
     if reward_rules_df.empty:
         st.warning("⚠️ No reward rules found. Check src/earn_rules.yaml.")
     else:
         best_cards_df = best_card_per_category(reward_rules_df)
         if best_cards_df.empty:
-            st.info("ℹ️ No category data to display from earn_rules.yaml.")
+            st.info("ℹ️ No category data to display.")
         else:
             render_best_card_snapshot(best_cards_df)
-except FileNotFoundError as e:
-    st.warning(f"⚠️ {e}")
 except Exception as e:
-    st.error(f"❌ Error loading best card snapshot: {e}")
+    st.warning(f"⚠️ Could not load best card snapshot: {e}")
 
 # ==========================================================
 # TRANSACTION DETAILS
 # ==========================================================
 st.subheader("💸 Transaction Details")
 
-df["date"] = pd.to_datetime(df["date"])
-df = df.sort_values("date", ascending=False)
+try:
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.sort_values("date", ascending=False)
+    display_cols = [
+        "date", "name", "amount", "category", "account",
+        "best_card", "optimal_used", "points_earned", "optimal_points", "missed_points"
+    ]
+    # Filter existing columns only (in case of variations)
+    display_cols = [c for c in display_cols if c in df.columns]
 
-display_cols = [
-    "date", "merchant", "amount", "category",
-    "card_used", "best_card", "optimal_used",
-    "points_earned", "optimal_points", "missed_points"
-]
+    st.dataframe(
+        df[display_cols].style.format({
+            "amount": "${:,.2f}",
+            "points_earned": "{:,.0f}",
+            "optimal_points": "{:,.0f}",
+            "missed_points": "{:,.0f}"
+        }),
+        height=600
+    )
+except Exception as e:
+    st.warning(f"⚠️ Could not display transactions: {e}")
 
-st.dataframe(
-    df[display_cols]
-    .style.format({
-        "amount": "${:,.2f}",
-        "points_earned": "{:,.0f}",
-        "optimal_points": "{:,.0f}",
-        "missed_points": "{:,.0f}"
-    }),
-    height=600
-)
-
-st.success("✅ Dashboard ready — all data synced with PointsPilot backend!")
+st.success("✅ Dashboard ready — using Copilot CSV data!")

@@ -185,4 +185,5 @@ def get_sandbox_transactions():
 # Entry Point
 # -----------------------------------------------------
 if __name__ == "__main__":
-    get_sandbox_transactions()
+    print("Plaid pull disabled. Using local CSV instead.") # replaced... get_sandbox_transactions() with temporary hold
+
