@@ -27,18 +27,43 @@ from plaid.exceptions import ApiException
 # -----------------------------------------------------
 # Load Plaid credentials
 # -----------------------------------------------------
+
+import os
+import json
+import streamlit as st
+
 def load_plaid_credentials():
+    """
+    Loads Plaid credentials from either:
+    1. Streamlit Secrets (for Streamlit Cloud)
+    2. Local credentials/plaid_credentials.json (for local dev)
+    """
+    # --- Try Streamlit Secrets first ---
+    try:
+        if "plaid" in st.secrets:
+            creds = {
+                "PLAID_CLIENT_ID": st.secrets["plaid"]["PLAID_CLIENT_ID"],
+                "PLAID_SECRET": st.secrets["plaid"]["PLAID_SECRET"],
+                "PLAID_ENV": st.secrets["plaid"]["PLAID_ENV"],
+            }
+            return creds
+    except Exception:
+        pass
+
+    # --- Fallback to local credentials file ---
     cred_path = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
         "credentials",
         "plaid_credentials.json"
     )
+
     if not os.path.exists(cred_path):
         raise FileNotFoundError(f"Plaid credentials not found at {cred_path}")
 
     with open(cred_path, "r") as f:
-        return json.load(f)
+        creds = json.load(f)
 
+    return creds
 
 # -----------------------------------------------------
 # Create Plaid client
