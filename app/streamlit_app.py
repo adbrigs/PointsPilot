@@ -117,8 +117,8 @@ col1, col2, col3, col4, col5, col6 = st.columns(6)
 
 col1.metric("✅ Points Earned", f"{int(total_points_earned):,}")
 col2.metric("🌟 Optimal Points", f"{int(total_optimal_points):,}")
-col3.metric("⚠️ Missed Points", f"{int(missed_points):,}")
-col4.metric("% Optimized", f"{optimization_rate:.1f}%")
+col3.metric("⚠️ Points Missed", f"{int(missed_points):,}")
+col4.metric("％ Optimized", f"{optimization_rate:.1f}%")
 col5.metric("💸 Points per $", f"{points_per_dollar:.2f}")
 col6.metric("🚀 Optimal Points per $", f"{optimal_points_per_dollar:.2f}")
 
