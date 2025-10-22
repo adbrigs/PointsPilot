@@ -12,30 +12,43 @@ import pandas as pd
 import streamlit as st
 from datetime import datetime
 
-# Ensure project root is in import path
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
-# Import backend modules
-from src.points_engine import compute_points
-from src.plaid_pull import get_sandbox_transactions
-from visuals.charts import points_per_card_chart  # ✅ chart import
-
-# -------------------------------------------------
-# Paths
-# -------------------------------------------------
+# ==========================================================
+# PATH FIX (for Streamlit Cloud + local compatibility)
+# ==========================================================
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+SRC_DIR = os.path.join(BASE_DIR, "src")
+if SRC_DIR not in sys.path:
+    sys.path.append(SRC_DIR)
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
+
+# ==========================================================
+# IMPORT BACKEND MODULES
+# ==========================================================
+from plaid_pull import get_sandbox_transactions
+from points_engine import compute_points, load_rules, best_card_per_category
+from insights import generate_insights
+from visuals.charts import points_per_card_chart
+from visuals.ui_sections import render_best_card_snapshot
+
+# ==========================================================
+# PATHS
+# ==========================================================
 DATA_DIR = os.path.join(BASE_DIR, "data")
 POINTS_PATH = os.path.join(DATA_DIR, "transactions_with_points.csv")
 
+# ==========================================================
+# STREAMLIT CONFIG
+# ==========================================================
 st.set_page_config(
     page_title="PointsPilot Dashboard",
     layout="wide",
     page_icon="✈️"
 )
 
-# -------------------------------------------------
-# Helper: Load Data
-# -------------------------------------------------
+# ==========================================================
+# HELPER: LOAD DATA
+# ==========================================================
 @st.cache_data
 def load_data():
     if not os.path.exists(POINTS_PATH):
@@ -45,9 +58,9 @@ def load_data():
     return df
 
 
-# -------------------------------------------------
-# Sidebar
-# -------------------------------------------------
+# ==========================================================
+# SIDEBAR
+# ==========================================================
 st.sidebar.title("✈️ PointsPilot")
 st.sidebar.markdown("**Manage your points & optimize every purchase.**")
 
@@ -88,9 +101,9 @@ if os.path.exists(POINTS_PATH):
 else:
     st.sidebar.markdown("No file yet.")
 
-# -------------------------------------------------
-# Main Dashboard
-# -------------------------------------------------
+# ==========================================================
+# MAIN DASHBOARD
+# ==========================================================
 st.title("💳 PointsPilot Dashboard")
 st.markdown("Visualize your reward earnings per transaction, and gain insights into how you can earn more!")
 
@@ -98,16 +111,15 @@ if df.empty:
     st.warning("No transactions found for the selected filters.")
     st.stop()
 
-# ===========================
+# ==========================================================
 # KPI SECTION
-# ===========================
+# ==========================================================
 st.subheader("💳 Points Overview")
 
 total_spent = df["amount"].sum()
 total_points_earned = df["points_earned"].sum()
 total_optimal_points = df["optimal_points"].sum()
 
-# Avoid division by zero
 optimization_rate = (total_points_earned / total_optimal_points * 100) if total_optimal_points > 0 else 0
 missed_points = total_optimal_points - total_points_earned
 points_per_dollar = (total_points_earned / total_spent) if total_spent > 0 else 0
@@ -121,16 +133,12 @@ col4.metric("% Optimized", f"{optimization_rate:.1f}%")
 col5.metric("💸 Points per $", f"{points_per_dollar:.2f}")
 col6.metric("🚀 Optimal Points per $", f"{optimal_points_per_dollar:.2f}")
 
-# -------------------------------------------------
-# Insights Section
-# -------------------------------------------------
-from src.insights import generate_insights
-
+# ==========================================================
+# INSIGHTS SECTION
+# ==========================================================
 st.markdown("### 💡 Smart Insights")
 
-# Wrap entire section in a collapsible container
 with st.expander("View Smart Insights", expanded=True):
-    # --- 1️⃣ Generate AI-style insights ---
     insights_df = generate_insights(df)
 
     if not insights_df.empty:
@@ -147,7 +155,7 @@ with st.expander("View Smart Insights", expanded=True):
     else:
         st.info("No insights available yet — add more transactions or refresh data.")
 
-    # --- 2️⃣ Keep your most-missed category insight ---
+    # Quick category improvement tip
     cat_summary = (
         df.groupby("category")[["points_earned", "optimal_points", "missed_points"]]
         .sum()
@@ -163,9 +171,9 @@ with st.expander("View Smart Insights", expanded=True):
             f"Try using your **{df.loc[df['category'] == most_missed_cat, 'best_card'].mode()[0]}** there."
         )
 
-# -------------------------------------------------
-# Category Breakdown
-# -------------------------------------------------
+# ==========================================================
+# CATEGORY BREAKDOWN
+# ==========================================================
 st.subheader("📊 Category Breakdown")
 
 st.dataframe(
@@ -176,9 +184,9 @@ st.dataframe(
     })
 )
 
-# -------------------------------------------------
-# POINTS PER CARD VISUAL (moved here)
-# -------------------------------------------------
+# ==========================================================
+# POINTS PER CARD VISUAL
+# ==========================================================
 st.subheader("📈 Points per Card")
 
 view_mode = st.radio("View as:", ["Points", "Cash Value"], horizontal=True, label_visibility="collapsed")
@@ -190,14 +198,13 @@ if fig_points is not None:
 else:
     st.warning("No data available for card visualization.")
 
-# -------------------------------------------------
-# BEST CARD SNAPSHOT (global from YAML)
-# -------------------------------------------------
-from src.points_engine import load_rules, best_card_per_category
-from visuals.ui_sections import render_best_card_snapshot
+# ==========================================================
+# BEST CARD SNAPSHOT (YAML-based)
+# ==========================================================
+st.subheader("🏆 Best Card by Category")
 
 try:
-    reward_rules_df = load_rules()  # YAML -> DataFrame
+    reward_rules_df = load_rules()  # YAML → DataFrame
     if reward_rules_df.empty:
         st.warning("⚠️ No reward rules found. Check src/earn_rules.yaml.")
     else:
@@ -210,10 +217,10 @@ except FileNotFoundError as e:
     st.warning(f"⚠️ {e}")
 except Exception as e:
     st.error(f"❌ Error loading best card snapshot: {e}")
-    
-# -------------------------------------------------
-# Transaction Detail Table
-# -------------------------------------------------
+
+# ==========================================================
+# TRANSACTION DETAILS
+# ==========================================================
 st.subheader("💸 Transaction Details")
 
 df["date"] = pd.to_datetime(df["date"])
@@ -232,12 +239,8 @@ st.dataframe(
         "points_earned": "{:,.0f}",
         "optimal_points": "{:,.0f}",
         "missed_points": "{:,.0f}"
-    })
-    .map(lambda v: "color: green; font-weight: bold" if v is True else "", subset=["optimal_used"]),
+    }),
     height=600
 )
 
-# -------------------------------------------------
-# Completion message
-# -------------------------------------------------
-st.success("Dashboard ready — all data synced with PointsPilot backend!")
+st.success("✅ Dashboard ready — all data synced with PointsPilot backend!")
