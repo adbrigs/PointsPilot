@@ -1,20 +1,23 @@
-Chase Sapphire Preferred:
-  Restaurants: 3
-  Travel: 2
-  Entertainment: 1
+cards:
+  - card_name: Chase Sapphire Preferred
+    rewards:
+      Restaurants: 3
+      Travel: 2
+      Entertainment: 1
 
+  - card_name: Chase Freedom Unlimited
+    rewards:
+      Drugstores: 3
+      Shopping: 1.5
+      Restaurants: 1.5
+      Travel: 1.5
+      Other: 1.5
+      None: 1.5
+      Entertainment: 1.5
 
-Chase Freedom Unlimited:
-  Drugstores: 3
-  Shopping: 1.5
-  Restaurants: 1.5
-  Travel: 1.5
-  Other: 1.5
-  None: 1.5
-  Entertainment: 1.5
-
-Citi AAdvantage Platinum Select:
-  Gas: 2
-  Travel: 2
-  Restaurants: 1 
-  Entertainment: 1
+  - card_name: Citi AAdvantage Platinum Select
+    rewards:
+      Gas: 2
+      Travel: 2
+      Restaurants: 1
+      Entertainment: 1

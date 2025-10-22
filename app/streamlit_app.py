@@ -18,6 +18,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 # Import backend modules
 from src.points_engine import compute_points
 from src.plaid_pull import get_sandbox_transactions
+from visuals.charts import points_per_card_chart  # ✅ chart import
 
 # -------------------------------------------------
 # Paths
@@ -100,8 +101,8 @@ if df.empty:
 # ===========================
 # KPI SECTION
 # ===========================
+st.subheader("💳 Points Overview")
 
-# Compute KPIs
 total_spent = df["amount"].sum()
 total_points_earned = df["points_earned"].sum()
 total_optimal_points = df["optimal_points"].sum()
@@ -112,34 +113,55 @@ missed_points = total_optimal_points - total_points_earned
 points_per_dollar = (total_points_earned / total_spent) if total_spent > 0 else 0
 optimal_points_per_dollar = (total_optimal_points / total_spent) if total_spent > 0 else 0
 
-# KPI layout
 col1, col2, col3, col4, col5, col6 = st.columns(6)
-
 col1.metric("✅ Points Earned", f"{int(total_points_earned):,}")
 col2.metric("🌟 Optimal Points", f"{int(total_optimal_points):,}")
 col3.metric("⚠️ Points Missed", f"{int(missed_points):,}")
-col4.metric("％ Optimized", f"{optimization_rate:.1f}%")
+col4.metric("% Optimized", f"{optimization_rate:.1f}%")
 col5.metric("💸 Points per $", f"{points_per_dollar:.2f}")
 col6.metric("🚀 Optimal Points per $", f"{optimal_points_per_dollar:.2f}")
 
 # -------------------------------------------------
-# Insights Section (moved up)
+# Insights Section
 # -------------------------------------------------
-st.markdown("### 💡 Insights")
+from src.insights import generate_insights
 
-cat_summary = (
-    df.groupby("category")[["points_earned", "optimal_points", "missed_points"]]
-    .sum()
-    .reset_index()
-    .sort_values("points_earned", ascending=False)
-)
+st.markdown("### 💡 Smart Insights")
 
-if not cat_summary.empty:
-    most_missed_cat = cat_summary.loc[cat_summary["missed_points"].idxmax(), "category"]
-    st.info(
-        f"You're missing the most points in **{most_missed_cat}**. "
-        f"Try using your **{df.loc[df['category'] == most_missed_cat, 'best_card'].mode()[0]}** there."
+# Wrap entire section in a collapsible container
+with st.expander("View Smart Insights", expanded=True):
+    # --- 1️⃣ Generate AI-style insights ---
+    insights_df = generate_insights(df)
+
+    if not insights_df.empty:
+        st.markdown("#### 🔍 Personalized Optimization Tips")
+        for _, r in insights_df.iterrows():
+            icon = (
+                "💳" if r["type"] == "card"
+                else "⚠️" if r["type"] == "missed"
+                else "🎯" if r["type"] == "category"
+                else "✈️" if r["type"] == "redemption"
+                else "✅"
+            )
+            st.info(f"{icon} {r['insight']}")
+    else:
+        st.info("No insights available yet — add more transactions or refresh data.")
+
+    # --- 2️⃣ Keep your most-missed category insight ---
+    cat_summary = (
+        df.groupby("category")[["points_earned", "optimal_points", "missed_points"]]
+        .sum()
+        .reset_index()
+        .sort_values("points_earned", ascending=False)
     )
+
+    if not cat_summary.empty:
+        most_missed_cat = cat_summary.loc[cat_summary["missed_points"].idxmax(), "category"]
+        st.markdown("#### ⚡ Quick Win")
+        st.info(
+            f"You're missing the most points in **{most_missed_cat}**. "
+            f"Try using your **{df.loc[df['category'] == most_missed_cat, 'best_card'].mode()[0]}** there."
+        )
 
 # -------------------------------------------------
 # Category Breakdown
@@ -154,6 +176,41 @@ st.dataframe(
     })
 )
 
+# -------------------------------------------------
+# POINTS PER CARD VISUAL (moved here)
+# -------------------------------------------------
+st.subheader("📈 Points per Card")
+
+view_mode = st.radio("View as:", ["Points", "Cash Value"], horizontal=True, label_visibility="collapsed")
+
+fig_points = points_per_card_chart(df)
+
+if fig_points is not None:
+    st.plotly_chart(fig_points, use_container_width=True)
+else:
+    st.warning("No data available for card visualization.")
+
+# -------------------------------------------------
+# BEST CARD SNAPSHOT (global from YAML)
+# -------------------------------------------------
+from src.points_engine import load_rules, best_card_per_category
+from visuals.ui_sections import render_best_card_snapshot
+
+try:
+    reward_rules_df = load_rules()  # YAML -> DataFrame
+    if reward_rules_df.empty:
+        st.warning("⚠️ No reward rules found. Check src/earn_rules.yaml.")
+    else:
+        best_cards_df = best_card_per_category(reward_rules_df)
+        if best_cards_df.empty:
+            st.info("ℹ️ No category data to display from earn_rules.yaml.")
+        else:
+            render_best_card_snapshot(best_cards_df)
+except FileNotFoundError as e:
+    st.warning(f"⚠️ {e}")
+except Exception as e:
+    st.error(f"❌ Error loading best card snapshot: {e}")
+    
 # -------------------------------------------------
 # Transaction Detail Table
 # -------------------------------------------------

@@ -1,7 +1,7 @@
 """
 PointsPilot - Points Engine
 ---------------------------
-Loads Plaid transaction data, applies earning rules,
+Loads Plaid transaction data, applies earning rules from YAML,
 and saves an enriched CSV (transactions_with_points.csv)
 for the Streamlit dashboard.
 """
@@ -12,18 +12,33 @@ import yaml
 
 
 # --------------------------------------------------
-# Load earning rules
+# Load earning rules (YAML)
 # --------------------------------------------------
 def load_rules():
-    base_path = os.path.dirname(os.path.dirname(__file__))
-    yaml_path = os.path.join(base_path, "src", "earn_rules.yaml")
+    """
+    Loads YAML reward rules and flattens into a DataFrame
+    with columns: [card_name, category, multiplier].
+    """
+    yaml_path = os.path.join(os.path.dirname(__file__), "earn_rules.yaml")
 
     if not os.path.exists(yaml_path):
         raise FileNotFoundError(f"earn_rules.yaml not found at {yaml_path}")
 
     with open(yaml_path, "r") as f:
-        rules = yaml.safe_load(f)
-    return rules
+        data = yaml.safe_load(f)
+
+    # Flatten structure
+    records = []
+    for card in data.get("cards", []):
+        card_name = card.get("card_name")
+        for category, multiplier in card.get("rewards", {}).items():
+            records.append({
+                "card_name": card_name,
+                "category": category,
+                "multiplier": multiplier
+            })
+
+    return pd.DataFrame(records)
 
 
 # --------------------------------------------------
@@ -57,29 +72,20 @@ def compute_points(transactions_path: str = None):
     transactions_path = transactions_path or os.path.join(data_dir, "transactions.csv")
     output_path = os.path.join(data_dir, "transactions_with_points.csv")
 
-    # Load transaction data
+    # Load transactions
     if not os.path.exists(transactions_path):
         raise FileNotFoundError(f"Transactions file not found: {transactions_path}")
 
     df = pd.read_csv(transactions_path)
-
-    # Ensure column consistency
     required_cols = ["date", "merchant", "amount", "category", "card_used"]
     for col in required_cols:
         if col not in df.columns:
             raise ValueError(f"Missing column '{col}' in transactions.csv")
 
-    # Load earning rules
-    rules = load_rules()
+    # Load earning rules (flattened YAML → DataFrame)
+    rules_df = load_rules()
 
-    # Flatten rules into lookup DataFrame
-    rows = []
-    for card, categories in rules.items():
-        for cat, rate in categories.items():
-            rows.append({"card": card, "category": cat, "rate": rate})
-    rules_df = pd.DataFrame(rows)
-
-    # Compute points and best card logic
+    # Compute points + best card logic
     df["points_earned"] = 0.0
     df["best_card"] = None
     df["best_rate"] = 0.0
@@ -88,23 +94,23 @@ def compute_points(transactions_path: str = None):
         cat = str(row["category"]).strip()
         amt = row["amount"]
 
-        # Rate for card used
+        # Find rate for card used
         used_rate = rules_df[
-            (rules_df["card"].apply(normalize_card_name)
+            (rules_df["card_name"].apply(normalize_card_name)
              == normalize_card_name(row["card_used"]))
             & (rules_df["category"].str.lower() == cat.lower())
-        ]["rate"].max() if not rules_df.empty else 0
+        ]["multiplier"].max() if not rules_df.empty else 0
 
-        # Best card overall
+        # Best available card for category
         best = rules_df[rules_df["category"].str.lower() == cat.lower()]
         if not best.empty:
-            best_row = best.loc[best["rate"].idxmax()]
-            df.at[i, "best_card"] = best_row["card"]
-            df.at[i, "best_rate"] = best_row["rate"]
+            best_row = best.loc[best["multiplier"].idxmax()]
+            df.at[i, "best_card"] = best_row["card_name"]
+            df.at[i, "best_rate"] = best_row["multiplier"]
 
         df.at[i, "points_earned"] = amt * (used_rate if pd.notna(used_rate) else 0)
 
-    # Normalize cards for comparison
+    # Normalize and flag if optimal card used
     df["optimal_used"] = df.apply(
         lambda x: normalize_card_name(x["card_used"]) == normalize_card_name(x["best_card"]),
         axis=1
@@ -121,9 +127,33 @@ def compute_points(transactions_path: str = None):
 
     return df
 
+# --------------------------------------------------
+# Helper: Best Card per Category
+# --------------------------------------------------
+
+def best_card_per_category(reward_rules_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Returns the single best card for each category based purely on earn_rules.yaml.
+    reward_rules_df columns: ['card_name', 'category', 'multiplier']
+    """
+    if reward_rules_df.empty:
+        return pd.DataFrame(columns=["category", "card_name", "multiplier"])
+
+    # pick the highest multiplier per category
+    best_cards = (
+        reward_rules_df.loc[reward_rules_df.groupby("category")["multiplier"].idxmax()]
+        .reset_index(drop=True)
+        .sort_values("category")
+    )
+
+    # optional: hide meta buckets from the snapshot
+    hide = {"All", "None"}
+    best_cards = best_cards[~best_cards["category"].isin(hide)]
+
+    return best_cards[["category", "card_name", "multiplier"]]
 
 # --------------------------------------------------
-# Entry Point (manual run)
+# Entry Point
 # --------------------------------------------------
 if __name__ == "__main__":
     compute_points()
