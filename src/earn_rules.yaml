@@ -5,8 +5,9 @@ cards:
       Travel: 2
       Entertainment: 1
       Transportation: 1
-      General_services: 1
+      General_Services: 1
       Personal_Care: 1
+      Other: 1
 
   - card_name: Chase Freedom Unlimited
     rewards:
@@ -14,12 +15,23 @@ cards:
       Shopping: 1.5
       Restaurants: 1.5
       Travel: 1.5
-      Other: 1.5
-      Transportation: 1.5
-      None: 1.5
       Entertainment: 1.5
-      General_services: 1.5
+      Transportation: 1.5
+      General_Services: 1.5
       Personal_Care: 1.5
+      Other: 1.5
+      None: 1.5
+
+  - card_name: Chase Freedom Flex
+    rewards:
+      Restaurants: 3
+      Drugstores: 3
+      Entertainment: 1
+      Travel: 1
+      Transportation: 1
+      General_Services: 1
+      Personal_Care: 1
+      Other: 1
 
   - card_name: Citi AAdvantage Platinum Select
     rewards:
@@ -28,5 +40,6 @@ cards:
       Restaurants: 1
       Entertainment: 1
       Transportation: 1
-      General_services: 1
-      Personal_Care: 1.5
+      General_Services: 1
+      Personal_Care: 1
+      Other: 1
