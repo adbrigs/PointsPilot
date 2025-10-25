@@ -1,12 +1,17 @@
-streamlit
+# Core data tools
 pandas
-pyyaml
 numpy
+pyyaml
+
+# Streamlit dashboard
+streamlit
 plotly
-pytest
-plaid-python
-requests
-python-dateutil
-typing-extensions
-cachetools
-watchdog
+seaborn
+matplotlib
+
+# Machine Learning
+scikit-learn
+xgboost
+
+# Optional utilities (safe to include)
+datetime

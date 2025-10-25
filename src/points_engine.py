@@ -1,22 +1,30 @@
 """
-PointsPilot - Points Engine (Local CSV Mode)
---------------------------------------------
-Uses local data/copilot_transactions.csv as input,
-filters for credit-card transactions only,
-applies earning rules from YAML, and saves an enriched
-transactions_with_points.csv for the Streamlit dashboard.
+PointsPilot - Points Engine (Accurate Missed Points Version)
+------------------------------------------------------------
+Processes raw_transactions.csv, filters valid credit-card spend,
+computes actual vs. optimal points based on earn_rules.yaml,
+and applies an ML model for predictive insights.
 """
 
 import os
+import re
 import pandas as pd
 import yaml
+from sklearn.preprocessing import LabelEncoder
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 # --------------------------------------------------
-# Load earning rules (YAML)
+# Load earning rules
 # --------------------------------------------------
-def load_rules():
-    yaml_path = os.path.join(os.path.dirname(__file__), "earn_rules.yaml")
+def load_rules(yaml_path=None):
+    base_path = os.path.dirname(os.path.dirname(__file__))
+    yaml_path = yaml_path or os.path.join(base_path, "src", "earn_rules.yaml")
+
     if not os.path.exists(yaml_path):
         raise FileNotFoundError(f"earn_rules.yaml not found at {yaml_path}")
 
@@ -26,257 +34,298 @@ def load_rules():
     records = []
     for card in data.get("cards", []):
         card_name = card.get("card_name")
-        for category, multiplier in card.get("rewards", {}).items():
-            records.append(
-                {"card_name": card_name, "category": category, "multiplier": multiplier}
-            )
+        for category, details in card.get("rewards", {}).items():
+            multiplier = details.get("multiplier", card.get("base_rate", 1))
+            records.append({
+                "card_name": card_name,
+                "category": category,
+                "multiplier": multiplier
+            })
     return pd.DataFrame(records)
 
 
 # --------------------------------------------------
-# Load merchant-based overrides (from YAML)
+# Infer category from transaction name
 # --------------------------------------------------
-def load_merchant_overrides():
-    yaml_path = os.path.join(os.path.dirname(__file__), "earn_rules.yaml")
-    if not os.path.exists(yaml_path):
-        return []
-    with open(yaml_path, "r") as f:
-        data = yaml.safe_load(f)
-    return data.get("merchant_overrides", [])
-
-
-# --------------------------------------------------
-# Normalize card names
-# --------------------------------------------------
-def normalize_card_name(name: str) -> str:
+def infer_category_from_name(name: str):
     if not isinstance(name, str):
-        return ""
-    name = name.lower().strip()
-    aliases = {
-        "freedom unlimited": "chase freedom unlimited",
-        "chase freedom unlimited": "chase freedom unlimited",
-        "freedom flex": "chase freedom flex",
-        "chase freedom flex": "chase freedom flex",
-        "sapphire preferred": "chase sapphire preferred",
-        "chase sapphire preferred": "chase sapphire preferred",
-        "aadvantage": "citi aadvantage platinum select",
-        "citi aadvantage": "citi aadvantage platinum select",
-        "citi aa": "citi aadvantage platinum select",
-        "citi aadvantage platinum": "citi aadvantage platinum select",
-        "citi aadvantage platinum select": "citi aadvantage platinum select",
-    }
-    for key in sorted(aliases, key=len, reverse=True):
-        if key in name:
-            return aliases[key]
-    return name
-
-
-# --------------------------------------------------
-# Normalize category names (Copilot → YAML)
-# --------------------------------------------------
-def normalize_category_name(cat: str) -> str:
-    if not isinstance(cat, str):
         return "Other"
-    cat = cat.strip().lower()
-    mapping = {
-        "bars & nightlife": "Restaurants & Bars",
-        "restaurants & bars": "Restaurants & Bars",
-        "car/gas": "Car/Gas",
+    name = name.lower()
+
+    keywords = {
+        "Dining": ["cafe", "coffee", "restaurant", "bar", "grill", "pizza", "bistro", "pub"],
+        "Groceries": ["whole foods", "trader joe", "aldi", "wegmans", "safeway", "kroger", "grocery", "supermarket"],
+        "Gas Stations": ["shell", "exxon", "chevron", "marathon", "bp", "sunoco", "mobil"],
+        "Drugstores": ["cvs", "walgreens", "rite aid", "pharmacy"],
+        "Entertainment": ["amc", "theater", "netflix", "spotify", "concert", "bowling", "museum"],
+        "Travel": ["uber", "lyft", "delta", "american airlines", "united", "marriott", "hilton", "airbnb", "sixt", "hertz"],
+        "Shopping": ["amazon", "target", "walmart", "costco", "ikea", "best buy", "store", "mall"],
+        "Personal Care": ["hair", "salon", "spa", "massage", "barber", "nail"],
+        "Misc": ["venmo", "zelle", "cash app", "atm", "fee", "transfer"]
+    }
+
+    for category, terms in keywords.items():
+        if any(term in name for term in terms):
+            return category
+
+    return "Other"
+
+
+# --------------------------------------------------
+# Normalize + cross-check categories
+# --------------------------------------------------
+def normalize_category(cat: str, name: str = ""):
+    cat = str(cat).strip().lower() if isinstance(cat, str) else "other"
+    inferred = infer_category_from_name(name)
+
+    base_map = {
+        "restaurants": "Dining",
+        "restaurants & bars": "Dining",
+        "bars & nightlife": "Dining",
+        "car/gas": "Gas Stations",
         "groceries": "Groceries",
-        "drugstores": "Drugstores",
-        "uobers/septa": "Ubers/Septa",
-        "ubers/septa": "Ubers/Septa",
-        "travel & vacation": "Travel & Vacation",
-        "shops": "Shops",
-        "clothing": "Clothing",
+        "subscriptions": "Entertainment",
+        "travel & vacation": "Travel",
         "entertainment": "Entertainment",
-        "recreation": "Recreation",
-        "gifts": "Shopping",
-        "subscriptions": "Misc",
-        "insurance": "Misc",
-        "health care": "Drugstores",
-        "home improvement": "Shopping",
-        "loans": "Misc",
-        "rent/utilities": "Misc",
-        "gym": "Recreation",
+        "drugstores": "Drugstores",
         "personal care": "Personal Care",
+        "gifts": "Shopping",
         "misc": "Other",
     }
-    return mapping.get(cat, cat.replace("_", " ").title())
+
+    normalized = base_map.get(cat, cat.title())
+    if normalized in ["Misc", "Other", "Gifts"] and inferred != "Other":
+        return inferred
+    return normalized
 
 
 # --------------------------------------------------
-# Fallback rate logic
+# Fuzzy card name matching
 # --------------------------------------------------
-def get_card_rate(card_norm: str, cat_norm: str, rules_df: pd.DataFrame) -> float:
+def match_card_name(account_name: str, valid_cards: list):
+    """Match transaction account name to one of your known cards."""
+    if not isinstance(account_name, str):
+        return None
+
+    name = account_name.lower().strip()
+
+    # Exclude non-credit accounts
+    if any(excl in name for excl in ["checking", "savings", "venmo", "paypal", "transfer", "profile", "internal"]):
+        return None
+
+    for valid in valid_cards:
+        valid_lower = valid.lower()
+        if valid_lower in name:
+            return valid
+
+        valid_tokens = [v for v in valid_lower.split() if v not in ["chase", "citi", "card", "mastercard", "visa", "world", "elite"]]
+        if all(v in name for v in valid_tokens):
+            return valid
+
+        if "sapphire" in name and "preferred" not in name and "sapphire preferred" in valid_lower:
+            return valid
+
+    return None
+
+
+# --------------------------------------------------
+# Multiplier helpers (Enhanced for fuzzy matching)
+# --------------------------------------------------
+
+def get_multiplier(card, category, rules_df):
+    """Return earning multiplier for the given card/category pair.
+    - Tries exact match first.
+    - Then fuzzy match (e.g., 'restaurants' matches 'restaurants & bars').
+    - Falls back to base rates if nothing matches.
+    """
+    card = str(card).lower().strip()
+    category = str(category).lower().strip()
+
+    # 🎯 1️⃣ Exact match
     match = rules_df[
-        (rules_df["card_name"].apply(normalize_card_name) == card_norm)
-        & (rules_df["category"].str.lower() == cat_norm.lower())
+        (rules_df["card_name"].str.lower() == card)
+        & (rules_df["category"].str.lower() == category)
     ]
-    if not match.empty:
-        return float(match["multiplier"].max())
 
-    if "freedom unlimited" in card_norm:
+    # 🎯 2️⃣ Fuzzy match (for categories like "Restaurants & Bars" vs "Restaurants")
+    if match.empty:
+        match = rules_df[
+            (rules_df["card_name"].str.lower() == card)
+            & (rules_df["category"].str.lower().apply(
+                lambda x: x in category or category in x
+            ))
+        ]
+
+    # ✅ 3️⃣ Found a match
+    if not match.empty:
+        return float(match["multiplier"].iloc[0])
+
+    # ⚙️ 4️⃣ Fallbacks for base earn rates
+    if "freedom unlimited" in card:
         return 1.5
-    if any(x in card_norm for x in ["sapphire preferred", "freedom flex", "aadvantage"]):
+    if "freedom flex" in card:
+        return 1.0
+    if "sapphire preferred" in card:
+        return 1.0
+    if "aadvantage" in card:
         return 1.0
     return 1.0
 
 
+def get_best_card(category, rules_df):
+    """Return best card and rate for a given category.
+    - Uses fuzzy category match logic.
+    - Returns highest multiplier and its card.
+    """
+    category = str(category).lower().strip()
+
+    # Exact category match first
+    cat_matches = rules_df[rules_df["category"].str.lower() == category]
+
+    # Fuzzy match fallback
+    if cat_matches.empty:
+        cat_matches = rules_df[
+            rules_df["category"].str.lower().apply(
+                lambda x: x in category or category in x
+            )
+        ]
+
+    if not cat_matches.empty:
+        top_row = cat_matches.loc[cat_matches["multiplier"].idxmax()]
+        return top_row["card_name"], float(top_row["multiplier"])
+
+    # Default fallback
+    return "None", 1.0
+
 # --------------------------------------------------
-# Compute points using local CSV only
+# Main compute function
 # --------------------------------------------------
-def compute_points(transactions_path: str = None):
+def compute_points():
     base_path = os.path.dirname(os.path.dirname(__file__))
     data_dir = os.path.join(base_path, "data")
-    os.makedirs(data_dir, exist_ok=True)
 
-    transactions_path = transactions_path or os.path.join(data_dir, "copilot_transactions.csv")
-    output_path = os.path.join(data_dir, "transactions_with_points.csv")
-
-    if not os.path.exists(transactions_path):
-        raise FileNotFoundError(f"Transactions file not found: {transactions_path}")
-
-    # --- Load data ---
-    df = pd.read_csv(transactions_path)
-    df.columns = df.columns.str.strip().str.lower()
-
-    # Map key fields
-    df["merchant"] = df.get("name", "")
-    df["card_used"] = df.get("account", "")
-    df["category"] = df.get("category", "")
-    df["amount"] = df.get("amount", 0)
-    df["date"] = df.get("date", "")
-
-    # ✅ Filter to recognized cards
-    recognized_cards = [
-        "Chase Sapphire",
-        "Freedom Unlimited",
-        "Freedom Flex",
-        "Citi®/AAdvantage® Platinum Select® World Elite Mastercard®",
-    ]
-    df = df[df["card_used"].str.contains("|".join(recognized_cards), case=False, na=False)]
-    if df.empty:
-        raise ValueError("No recognized credit-card transactions found.")
-    print(f"✅ Loaded {len(df)} transactions from recognized credit cards.")
-
+    df = pd.read_csv(os.path.join(data_dir, "raw_transactions.csv"))
     rules_df = load_rules()
-    merchant_overrides = load_merchant_overrides()
+    valid_cards = rules_df["card_name"].unique().tolist()
 
-    # Predefine columns
-    for col in ["best_cards_list", "best_card", "best_rate", "points_earned"]:
-        if col not in df.columns:
-            df[col] = None
-
-    # ------------------------------------------------------------
-    # --- Core computation loop ---------------------------------
-    # ------------------------------------------------------------
-    for i, row in df.iterrows():
-        merchant = str(row.get("merchant", "")).lower()
-        cat = normalize_category_name(str(row["category"]))
-        amt = float(row["amount"])
-        card_norm = normalize_card_name(str(row["card_used"]))
-
-        used_rate = get_card_rate(card_norm, cat, rules_df)
-        best_card = None
-        best_rate = 0.0
-        override_applied = False
-
-        # --- Merchant overrides ---
-        for override in merchant_overrides:
-            merch_match = override["merchant"].lower() in merchant
-            if merch_match:
-                best_card = override["card_name"]
-                best_rate = override["multiplier"]
-                if override["card_name"].lower() in card_norm:
-                    used_rate = override["multiplier"]
-                    print(f"🎯 Override applied: {merchant} → {override['card_name']} @ {override['multiplier']}×")
-                override_applied = True
-                break
-
-        # --- Determine best card(s) normally ---
-        if not override_applied:
-            best = rules_df[rules_df["category"].str.lower() == cat.lower()]
-            if not best.empty:
-                max_mult = best["multiplier"].max()
-                top_cards = best.loc[best["multiplier"] == max_mult, "card_name"].tolist()
-                df.at[i, "best_cards_list"] = [normalize_card_name(c) for c in top_cards]
-                df.at[i, "best_card"] = ", ".join(top_cards)
-                df.at[i, "best_rate"] = max_mult
-            else:
-                df.at[i, "best_cards_list"] = []
-                df.at[i, "best_card"] = "Unmatched"
-                df.at[i, "best_rate"] = 1.0
-        else:
-            df.at[i, "best_card"] = best_card
-            df.at[i, "best_rate"] = best_rate
-
-        # --- Points earned ---
-        df.at[i, "points_earned"] = round(amt * used_rate, 2)
-
-    # ------------------------------------------------------------
-    # --- Optimal card check (multi-card aware) ------------------
-    # ------------------------------------------------------------
-    def is_optimal(x):
-        used = normalize_card_name(x["card_used"])
-        best_cards = x.get("best_cards_list", [])
-        if isinstance(best_cards, list) and best_cards:
-            return used in best_cards
-        return normalize_card_name(x["card_used"]) == normalize_card_name(x.get("best_card", ""))
-
-    df["optimal_used"] = df.apply(is_optimal, axis=1)
-
-    # ------------------------------------------------------------
-    # --- Points math (safe numeric conversion) ------------------
-    # ------------------------------------------------------------
+    # Clean columns
+    df.columns = df.columns.str.strip().str.lower()
+    df.rename(columns={"account": "card_used", "account mask": "account_mask"}, inplace=True)
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0)
-    df["best_rate"] = pd.to_numeric(df["best_rate"], errors="coerce").fillna(1.0)
-    df["points_earned"] = pd.to_numeric(df["points_earned"], errors="coerce").fillna(0)
 
+    # --------------------------------------------------
+    # Filter valid credit-card transactions ONLY
+    # --------------------------------------------------
+    df["card_mapped"] = df["card_used"].apply(lambda x: match_card_name(x, valid_cards))
+    df = df[df["card_mapped"].notna()]
+    df = df[df["amount"].abs() > 0.01]
+
+    exclude_keywords = [
+        "transfer", "payment", "pay", "thank you", "refund",
+        "credit", "balance", "adjustment", "reversal"
+    ]
+    df = df[
+        ~df["type"].str.contains("transfer", case=False, na=False)
+        & ~df["name"].str.contains("|".join(exclude_keywords), case=False, na=False)
+        & ~df["category"].str.contains("|".join(exclude_keywords), case=False, na=False)
+    ]
+
+    print(f"✅ Loaded {len(df)} valid credit-card transactions after removing internal transfers and payments.")
+    print(f"🪪 Recognized cards: {', '.join(df['card_mapped'].unique())}")
+
+    # Normalize categories
+    df["normalized_category"] = df.apply(lambda x: normalize_category(x["category"], x["name"]), axis=1)
+
+    # --------------------------------------------------
+    # Compute best and actual points
+    # --------------------------------------------------
+    df["best_card"], df["best_rate"] = zip(*df["normalized_category"].map(lambda c: get_best_card(c, rules_df)))
+    df["used_rate"] = df.apply(lambda x: get_multiplier(x["card_mapped"], x["normalized_category"], rules_df), axis=1)
+
+    df["points_earned"] = (df["amount"] * df["used_rate"]).round(2)
     df["optimal_points"] = (df["amount"] * df["best_rate"]).round(2)
-    df["missed_points"] = (df["optimal_points"] - df["points_earned"]).round(2)
-    df.loc[df["missed_points"] < 0, "missed_points"] = 0
+    df["missed_points"] = (df["optimal_points"] - df["points_earned"]).clip(lower=0)
 
-    # Cleanup
-    if "best_cards_list" in df.columns:
-        df.drop(columns=["best_cards_list"], inplace=True)
+    # --------------------------------------------------
+    # ML model: Decision Tree for insights
+    # --------------------------------------------------
+    df_ml = df[df["best_card"] != "None"].copy()
+    le_cat = LabelEncoder()
+    le_card = LabelEncoder()
 
-    # --- Save ---
+    df_ml["cat_encoded"] = le_cat.fit_transform(df_ml["normalized_category"])
+    df_ml["card_encoded"] = le_card.fit_transform(df_ml["best_card"])
+
+    X = df_ml[["cat_encoded", "amount"]]
+    y = df_ml["card_encoded"]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    model = DecisionTreeClassifier(max_depth=4, random_state=42)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    acc = accuracy_score(y_test, y_pred)
+    cm = confusion_matrix(y_test, y_pred)
+    print(f"\n🧠 ML Model Accuracy: {acc * 100:.2f}%")
+    print(classification_report(y_test, y_pred, target_names=le_card.classes_))
+
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Greens",
+                xticklabels=le_card.classes_, yticklabels=le_card.classes_)
+    plt.title("Confusion Matrix - PointsPilot ML Model")
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.tight_layout()
+    plt.savefig(os.path.join(data_dir, "decision_tree_confusion_matrix.png"))
+    plt.close()
+
+    # Handle unseen categories gracefully
+    known_classes = set(le_cat.classes_)
+    df["normalized_category"] = df["normalized_category"].apply(lambda c: c if c in known_classes else "Other")
+    df["cat_encoded"] = le_cat.transform(df["normalized_category"])
+    df["ml_pred_encoded"] = model.predict(df[["cat_encoded", "amount"]])
+    df["ml_suggested_card"] = le_card.inverse_transform(df["ml_pred_encoded"])
+    df["model_disagreement"] = df["ml_suggested_card"] != df["best_card"]
+
+    # --------------------------------------------------
+    # Save output and summary
+    # --------------------------------------------------
+    output_path = os.path.join(data_dir, "transactions_review.csv")
     df.to_csv(output_path, index=False)
 
-    # --- Summary ---
-    total_points = df["points_earned"].sum()
-    total_missed = df["missed_points"].sum()
-    opt_rate = round(100 * (1 - (total_missed / (total_points + total_missed + 1e-9))), 2)
+    print(f"\n✅ Saved filtered + analyzed transactions → {output_path}")
+    print(f"⚡ Model disagreements flagged: {df['model_disagreement'].sum()}\n")
 
-    print("\n✅ Points Summary")
-    print(f"   • Transactions processed: {len(df)}")
-    print(f"   • Total points earned: {total_points:,.0f}")
-    print(f"   • Missed points: {total_missed:,.0f}")
-    print(f"   • Optimization rate: {opt_rate}%")
-    print(f"   → Saved to {output_path}\n")
+    summary = (
+        df.groupby("card_mapped")
+        .agg(
+            Transactions=("amount", "count"),
+            Total_Spend=("amount", "sum"),
+            Points_Earned=("points_earned", "sum"),
+            Missed_Points=("missed_points", "sum")
+        )
+        .reset_index()
+    )
+
+    summary["Optimization_Rate"] = (
+        (summary["Points_Earned"] / (summary["Points_Earned"] + summary["Missed_Points"])) * 100
+    ).round(1)
+
+    print("📊 Summary by Card:\n")
+    print(summary.to_string(index=False))
+    print("\n💾 You can find this breakdown inside transactions_review.csv as well.")
+
+    # --------------------------------------------------
+    # Save summary as card_summary.csv for dashboard use
+    # --------------------------------------------------
+    summary_path = os.path.join(data_dir, "card_summary.csv")
+    summary.to_csv(summary_path, index=False)
+    print(f"📁 Saved card summary → {summary_path}")
 
     return df
-
-
-# --------------------------------------------------
-# Best Card per Category
-# --------------------------------------------------
-def best_card_per_category(reward_rules_df: pd.DataFrame) -> pd.DataFrame:
-    if reward_rules_df.empty:
-        return pd.DataFrame(columns=["category", "card_name", "multiplier"])
-
-    best_cards = (
-        reward_rules_df.loc[reward_rules_df.groupby("category")["multiplier"].idxmax()]
-        .reset_index(drop=True)
-        .sort_values("category")
-    )
-    return best_cards[["category", "card_name", "multiplier"]]
-
 
 # --------------------------------------------------
 # Entry Point
 # --------------------------------------------------
 if __name__ == "__main__":
-    print("📂 Running in Local CSV Mode (Copilot format detected)...")
     compute_points()

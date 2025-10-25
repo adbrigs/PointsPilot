@@ -1,61 +1,122 @@
+version: 2025-Q4
+last_updated: "2025-10-24"
+
 cards:
-  - card_name: Chase Sapphire
+  - card_name: Sapphire Preferred
+    issuer: Chase
+    point_type: Chase Ultimate Rewards
+    base_rate: 1
     rewards:
-      Restaurants & Bars: 3
-      Bars & Nightlife: 3
-      Travel & Vacation: 2
-      Ubers/Septa: 2
-      Entertainment: 1
-      Recreation: 1
-      Groceries: 1
-      Shops: 1
-      Misc: 1
-      Other: 1
+      Dining:
+        multiplier: 3
+      Online Grocery:
+        multiplier: 3
+      Select Streaming Services:
+        multiplier: 3
+      Travel (Chase Travel Portal):
+        multiplier: 5
+        channel: Chase Travel Portal
+      Other Travel:
+        multiplier: 2
+      Other:
+        multiplier: 1
+    notes: >
+      5× points on travel purchased through Chase Travel,
+      3× on dining (including takeout and delivery),
+      3× on select streaming services (Netflix, Spotify, Hulu, Disney+, Apple),
+      3× on online grocery purchases (excluding Walmart, Target, and wholesale clubs),
+      2× on other travel, and 1× on all other purchases.
 
   - card_name: Freedom Unlimited
+    issuer: Chase
+    point_type: Chase Ultimate Rewards
+    base_rate: 1.5
     rewards:
-      Drugstores: 3
-      Restaurants & Bars: 3
-      Bars & Nightlife: 1.5
-      Groceries: 1.5
-      Travel & Vacation: 1.5
-      Ubers/Septa: 1.5
-      Shops: 1.5
-      Entertainment: 1.5
-      Recreation: 1.5
-      Clothing: 1.5
-      Misc: 1.5
-      Other: 1.5
+      Dining:
+        multiplier: 3
+      Drugstores:
+        multiplier: 3
+      Travel:
+        multiplier: 5
+        channel: Chase Travel Portal
+      Other:
+        multiplier: 1.5
+    notes: >
+      5% on travel purchased through Chase Travel,
+      3% on dining and drugstores,
+      1.5% on all other purchases.
 
   - card_name: Freedom Flex
+    issuer: Chase
+    point_type: Chase Ultimate Rewards
+    base_rate: 1
     rewards:
-      Drugstores: 3
-      Restaurants & Bars: 3
-      Bars & Nightlife: 3
-      Entertainment: 1
-      Recreation: 1
-      Groceries: 1
-      Ubers/Septa: 1
-      Travel & Vacation: 1
-      Misc: 1
-      Other: 1
+      Dining:
+        multiplier: 3
+      Drugstores:
+        multiplier: 3
+      Travel:
+        multiplier: 5
+        channel: Chase Travel Portal
+      Rotating Categories:
+        multiplier: 5
+        activation_required: true
+        cap:
+          amount: 1500
+          period: quarterly
+      Other:
+        multiplier: 1
+    rotating_categories:
+      Q1 2025:
+        - Grocery Stores (excluding Walmart & Target)
+        - Fitness Clubs & Gym Memberships
+      Q2 2025:
+        - Home Improvement Stores
+        - Streaming Services
+      Q3 2025:
+        - Gas Stations
+        - EV Charging
+        - Select Travel
+      Q4 2025:
+        - PayPal
+        - Walmart
+    promotions:
+      - description: "10% back at Walmart (Pay with PayPal)"
+        valid_from: "2025-10-01"
+        valid_to: "2025-12-31"
+        category: "Rotating Categories"
+        multiplier: 10
+      - description: "7% back on Chase Dining experiences"
+        valid_from: "2025-11-15"
+        valid_to: "2026-01-15"
+        category: "Dining"
+        multiplier: 7
+    notes: >
+      5% on quarterly rotating categories (up to $1,500 per quarter, activation required),
+      5% on travel purchased through Chase Travel,
+      3% on dining and drugstores,
+      plus limited-time bonus promotions.
 
-  - card_name: Citi®/AAdvantage® Platinum Select® World Elite Mastercard®
+  - card_name: AAdvantage Platinum Select
+    issuer: Citi
+    point_type: AAdvantage Miles
+    base_rate: 1
     rewards:
-      Car/Gas: 2
-      Ubers/Septa: 2
-      Travel & Vacation: 2
-      Restaurants & Bars: 2
-      Bars & Nightlife: 2
-      Shops: 1
-      Groceries: 1
-      Misc: 1
-      Other: 1
-
-merchant_overrides:
-  - merchant: apple.com-bill
-    card_name: Chase Sapphire
-    multiplier: 3
-  - merchant: apple.com/bill
-    card_name: Chase Sapphire
-    multiplier: 3
+      Gas Stations:
+        multiplier: 2
+      Restaurants:
+        multiplier: 2
+      American Airlines Purchases:
+        multiplier: 2
+        channel: American Airlines
+      Other:
+        multiplier: 1
+    promotions:
+      - description: "3× on select AA vacation packages"
+        valid_from: "2025-09-01"
+        valid_to: "2026-01-31"
+        category: "American Airlines Purchases"
+        multiplier: 3
+    notes: >
+      2× miles on American Airlines purchases, gas stations, and restaurants;
+      1× mile on all other purchases.
