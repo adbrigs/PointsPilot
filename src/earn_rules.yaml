@@ -41,6 +41,8 @@ cards:
         channel: Chase Travel Portal
       Other:
         multiplier: 1.5
+      Transit/Tolls:
+        multiplier: 1.5
     notes: >
       5% on travel purchased through Chase Travel,
       3% on dining and drugstores,

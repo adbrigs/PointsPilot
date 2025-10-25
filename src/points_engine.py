@@ -1,6 +1,6 @@
 """
-PointsPilot - Points Engine (Accurate Missed Points Version)
-------------------------------------------------------------
+PointsPilot - Points Engine (Enhanced with Travel & Transit Logic)
+-----------------------------------------------------------------
 Processes raw_transactions.csv, filters valid credit-card spend,
 computes actual vs. optimal points based on earn_rules.yaml,
 and applies an ML model for predictive insights.
@@ -16,7 +16,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 
 # --------------------------------------------------
 # Load earning rules
@@ -48,6 +47,7 @@ def load_rules(yaml_path=None):
 # Infer category from transaction name
 # --------------------------------------------------
 def infer_category_from_name(name: str):
+    """Guess category based on merchant name keywords."""
     if not isinstance(name, str):
         return "Other"
     name = name.lower()
@@ -58,7 +58,8 @@ def infer_category_from_name(name: str):
         "Gas Stations": ["shell", "exxon", "chevron", "marathon", "bp", "sunoco", "mobil"],
         "Drugstores": ["cvs", "walgreens", "rite aid", "pharmacy"],
         "Entertainment": ["amc", "theater", "netflix", "spotify", "concert", "bowling", "museum"],
-        "Travel": ["uber", "lyft", "delta", "american airlines", "united", "marriott", "hilton", "airbnb", "sixt", "hertz"],
+        "Travel": ["uber", "lyft", "delta", "united", "marriott", "hilton", "airbnb", "sixt", "hertz"],
+        "Transit/Tolls": ["ez pass", "e-zpass", "turnpike", "toll", "parking", "septa", "mta", "transit", "metro", "train", "bus"],
         "Shopping": ["amazon", "target", "walmart", "costco", "ikea", "best buy", "store", "mall"],
         "Personal Care": ["hair", "salon", "spa", "massage", "barber", "nail"],
         "Misc": ["venmo", "zelle", "cash app", "atm", "fee", "transfer"]
@@ -86,6 +87,9 @@ def normalize_category(cat: str, name: str = ""):
         "groceries": "Groceries",
         "subscriptions": "Entertainment",
         "travel & vacation": "Travel",
+        "travel": "Travel",
+        "tolls": "Transit/Tolls",
+        "parking": "Transit/Tolls",
         "entertainment": "Entertainment",
         "drugstores": "Drugstores",
         "personal care": "Personal Care",
@@ -94,9 +98,26 @@ def normalize_category(cat: str, name: str = ""):
     }
 
     normalized = base_map.get(cat, cat.title())
-    if normalized in ["Misc", "Other", "Gifts"] and inferred != "Other":
+    if normalized in ["Misc", "Other", "Gifts", "Car/Gas"] and inferred != "Other":
         return inferred
     return normalized
+
+
+# --------------------------------------------------
+# Canonical category helper
+# --------------------------------------------------
+def canonical_category(cat):
+    """Normalize minor variations for category matching."""
+    cat = str(cat).lower()
+    if "restaurant" in cat or "dining" in cat or "bar" in cat:
+        return "dining"
+    if "gas" in cat:
+        return "gas stations"
+    if "toll" in cat or "transit" in cat or "parking" in cat:
+        return "transit/tolls"
+    if "travel" in cat:
+        return "travel"
+    return cat.strip()
 
 
 # --------------------------------------------------
@@ -113,89 +134,116 @@ def match_card_name(account_name: str, valid_cards: list):
     if any(excl in name for excl in ["checking", "savings", "venmo", "paypal", "transfer", "profile", "internal"]):
         return None
 
-    for valid in valid_cards:
-        valid_lower = valid.lower()
-        if valid_lower in name:
-            return valid
+    aliases = {
+        "sapphire": "Sapphire Preferred",
+        "freedom unlimited": "Freedom Unlimited",
+        "freedom flex": "Freedom Flex",
+        "aadvantage": "AAdvantage Platinum Select"
+    }
 
-        valid_tokens = [v for v in valid_lower.split() if v not in ["chase", "citi", "card", "mastercard", "visa", "world", "elite"]]
-        if all(v in name for v in valid_tokens):
-            return valid
-
-        if "sapphire" in name and "preferred" not in name and "sapphire preferred" in valid_lower:
-            return valid
+    for key, value in aliases.items():
+        if key in name:
+            return value
 
     return None
 
 
 # --------------------------------------------------
-# Multiplier helpers (Enhanced for fuzzy matching)
+# Multiplier helpers (Enhanced with Travel + Transit logic)
 # --------------------------------------------------
-
-def get_multiplier(card, category, rules_df):
-    """Return earning multiplier for the given card/category pair.
-    - Tries exact match first.
-    - Then fuzzy match (e.g., 'restaurants' matches 'restaurants & bars').
-    - Falls back to base rates if nothing matches.
+def get_multiplier(card, category, rules_df, name=""):
+    """
+    Return earning multiplier for the given card/category pair.
+    Includes special-case handling for travel portals, airline-specific rules,
+    and transit/tolls.
     """
     card = str(card).lower().strip()
-    category = str(category).lower().strip()
+    category = canonical_category(category)
+    name = str(name).lower().strip()
 
-    # 🎯 1️⃣ Exact match
+    # Base rule lookup
     match = rules_df[
         (rules_df["card_name"].str.lower() == card)
-        & (rules_df["category"].str.lower() == category)
+        & (rules_df["category"].str.lower().apply(lambda c: canonical_category(c) == category))
     ]
-
-    # 🎯 2️⃣ Fuzzy match (for categories like "Restaurants & Bars" vs "Restaurants")
-    if match.empty:
-        match = rules_df[
-            (rules_df["card_name"].str.lower() == card)
-            & (rules_df["category"].str.lower().apply(
-                lambda x: x in category or category in x
-            ))
-        ]
-
-    # ✅ 3️⃣ Found a match
     if not match.empty:
-        return float(match["multiplier"].iloc[0])
+        multiplier = float(match["multiplier"].iloc[0])
+    else:
+        multiplier = 1.0
 
-    # ⚙️ 4️⃣ Fallbacks for base earn rates
-    if "freedom unlimited" in card:
-        return 1.5
-    if "freedom flex" in card:
-        return 1.0
-    if "sapphire preferred" in card:
-        return 1.0
-    if "aadvantage" in card:
-        return 1.0
-    return 1.0
+    # ✈️ Travel portal logic (Chase)
+    if "travel" in category:
+        if any(word in name for word in ["chase travel", "chase portal", "expedia", "ultimate rewards"]):
+            pass  # keep assigned multiplier (5× via portal)
+        elif "freedom unlimited" in card or "freedom flex" in card:
+            multiplier = 1.5  # Base rate
+        elif "sapphire preferred" in card:
+            multiplier = 2.0  # Standard travel rate (non-portal)
+        else:
+            multiplier = 1.0
+
+    # 🛫 AAdvantage logic (AA-only)
+    if "aadvantage" in card and "travel" in category:
+        if "american airlines" in name or "aa.com" in name:
+            multiplier = 2.0
+        else:
+            multiplier = 1.0
+
+    # 🚗 Transit / Tolls → no travel portal or airline logic applies
+    if "transit" in category or "toll" in category:
+        if "freedom unlimited" in card:
+            multiplier = 1.5
+        elif "freedom flex" in card:
+            multiplier = 1.0
+        elif "sapphire preferred" in card:
+            multiplier = 1.0
+        elif "aadvantage" in card:
+            multiplier = 1.0
+
+    return multiplier
 
 
-def get_best_card(category, rules_df):
-    """Return best card and rate for a given category.
-    - Uses fuzzy category match logic.
-    - Returns highest multiplier and its card.
+def get_best_cards(category, rules_df, name=""):
     """
-    category = str(category).lower().strip()
+    Return list of best cards and top multiplier for given category,
+    respecting travel and airline-specific conditions.
+    """
+    category = canonical_category(category)
+    name = str(name).lower().strip()
 
-    # Exact category match first
-    cat_matches = rules_df[rules_df["category"].str.lower() == category]
+    cat_matches = rules_df[
+        rules_df["category"].str.lower().apply(lambda c: canonical_category(c) == category)
+    ].copy()
 
-    # Fuzzy match fallback
-    if cat_matches.empty:
-        cat_matches = rules_df[
-            rules_df["category"].str.lower().apply(
-                lambda x: x in category or category in x
-            )
-        ]
+    # Travel-specific adjustments
+    if "travel" in category:
+        # AAdvantage only 2× for AA
+        if not ("american airlines" in name or "aa.com" in name):
+            cat_matches.loc[
+                cat_matches["card_name"].str.contains("aadvantage", case=False),
+                "multiplier"
+            ] = 1.0
+
+        # Chase cards: 5× only through portal
+        cat_matches.loc[
+            cat_matches["card_name"].str.contains("freedom|sapphire", case=False),
+            "multiplier"
+        ] = cat_matches["multiplier"].apply(lambda x: 2.0 if x > 2 else x)
+
+    # Transit/Tolls — always 1.5× for Freedom Unlimited
+    if "transit" in category or "toll" in category:
+        cat_matches.loc[
+            cat_matches["card_name"].str.contains("freedom unlimited", case=False),
+            "multiplier"
+        ] = 1.5
 
     if not cat_matches.empty:
-        top_row = cat_matches.loc[cat_matches["multiplier"].idxmax()]
-        return top_row["card_name"], float(top_row["multiplier"])
+        max_mult = cat_matches["multiplier"].max()
+        best_cards = cat_matches.loc[cat_matches["multiplier"] == max_mult, "card_name"].tolist()
+        return best_cards, float(max_mult)
 
-    # Default fallback
-    return "None", 1.0
+    return ["None"], 1.0
+
 
 # --------------------------------------------------
 # Main compute function
@@ -213,9 +261,7 @@ def compute_points():
     df.rename(columns={"account": "card_used", "account mask": "account_mask"}, inplace=True)
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0)
 
-    # --------------------------------------------------
-    # Filter valid credit-card transactions ONLY
-    # --------------------------------------------------
+    # Filter valid credit-card transactions
     df["card_mapped"] = df["card_used"].apply(lambda x: match_card_name(x, valid_cards))
     df = df[df["card_mapped"].notna()]
     df = df[df["amount"].abs() > 0.01]
@@ -236,19 +282,17 @@ def compute_points():
     # Normalize categories
     df["normalized_category"] = df.apply(lambda x: normalize_category(x["category"], x["name"]), axis=1)
 
-    # --------------------------------------------------
     # Compute best and actual points
-    # --------------------------------------------------
-    df["best_card"], df["best_rate"] = zip(*df["normalized_category"].map(lambda c: get_best_card(c, rules_df)))
-    df["used_rate"] = df.apply(lambda x: get_multiplier(x["card_mapped"], x["normalized_category"], rules_df), axis=1)
+    df["best_cards_list"], df["best_rate"] = zip(*df.apply(lambda x: get_best_cards(x["normalized_category"], rules_df, x["name"]), axis=1))
+    df["best_card"] = df["best_cards_list"].apply(lambda lst: ", ".join(lst))
+    df["used_rate"] = df.apply(lambda x: get_multiplier(x["card_mapped"], x["normalized_category"], rules_df, x["name"]), axis=1)
 
     df["points_earned"] = (df["amount"] * df["used_rate"]).round(2)
     df["optimal_points"] = (df["amount"] * df["best_rate"]).round(2)
     df["missed_points"] = (df["optimal_points"] - df["points_earned"]).clip(lower=0)
+    df["optimal_used"] = df.apply(lambda x: str(x["card_mapped"]).lower() in str(x["best_card"]).lower(), axis=1)
 
-    # --------------------------------------------------
-    # ML model: Decision Tree for insights
-    # --------------------------------------------------
+    # ML model (Decision Tree)
     df_ml = df[df["best_card"] != "None"].copy()
     le_cat = LabelEncoder()
     le_card = LabelEncoder()
@@ -265,10 +309,17 @@ def compute_points():
     y_pred = model.predict(X_test)
 
     acc = accuracy_score(y_test, y_pred)
-    cm = confusion_matrix(y_test, y_pred)
     print(f"\n🧠 ML Model Accuracy: {acc * 100:.2f}%")
-    print(classification_report(y_test, y_pred, target_names=le_card.classes_))
 
+    # Handle mismatch between y_test labels and encoded classes
+    unique_labels = sorted(set(y_test) | set(y_pred))
+    class_labels = [le_card.inverse_transform([i])[0] for i in unique_labels]
+
+    # Compute confusion matrix and report safely
+    cm = confusion_matrix(y_test, y_pred, labels=unique_labels)
+    print(classification_report(y_test, y_pred, labels=unique_labels, target_names=class_labels))
+
+    # Save confusion matrix
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Greens",
                 xticklabels=le_card.classes_, yticklabels=le_card.classes_)
@@ -279,23 +330,14 @@ def compute_points():
     plt.savefig(os.path.join(data_dir, "decision_tree_confusion_matrix.png"))
     plt.close()
 
-    # Handle unseen categories gracefully
-    known_classes = set(le_cat.classes_)
-    df["normalized_category"] = df["normalized_category"].apply(lambda c: c if c in known_classes else "Other")
-    df["cat_encoded"] = le_cat.transform(df["normalized_category"])
-    df["ml_pred_encoded"] = model.predict(df[["cat_encoded", "amount"]])
-    df["ml_suggested_card"] = le_card.inverse_transform(df["ml_pred_encoded"])
-    df["model_disagreement"] = df["ml_suggested_card"] != df["best_card"]
-
-    # --------------------------------------------------
-    # Save output and summary
-    # --------------------------------------------------
+    # Save output
     output_path = os.path.join(data_dir, "transactions_review.csv")
     df.to_csv(output_path, index=False)
 
     print(f"\n✅ Saved filtered + analyzed transactions → {output_path}")
-    print(f"⚡ Model disagreements flagged: {df['model_disagreement'].sum()}\n")
+    print(f"⚡ Model disagreements flagged: {df['optimal_used'].sum()}\n")
 
+    # Card summary
     summary = (
         df.groupby("card_mapped")
         .agg(
@@ -311,18 +353,15 @@ def compute_points():
         (summary["Points_Earned"] / (summary["Points_Earned"] + summary["Missed_Points"])) * 100
     ).round(1)
 
-    print("📊 Summary by Card:\n")
-    print(summary.to_string(index=False))
-    print("\n💾 You can find this breakdown inside transactions_review.csv as well.")
-
-    # --------------------------------------------------
-    # Save summary as card_summary.csv for dashboard use
-    # --------------------------------------------------
     summary_path = os.path.join(data_dir, "card_summary.csv")
     summary.to_csv(summary_path, index=False)
-    print(f"📁 Saved card summary → {summary_path}")
+
+    print("📊 Summary by Card:\n")
+    print(summary.to_string(index=False))
+    print(f"\n💾 Saved card summary → {summary_path}")
 
     return df
+
 
 # --------------------------------------------------
 # Entry Point

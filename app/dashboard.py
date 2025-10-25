@@ -79,25 +79,10 @@ st.sidebar.markdown("---")
 df = load_data()
 
 # ==========================================================
-# Add normalized optimal_used flag
+# FIX: Ensure `optimal_used` is boolean (True/False)
 # ==========================================================
-def normalize_card(card):
-    name = str(card).lower()
-    if "sapphire" in name:
-        return "sapphire preferred"
-    if "freedom unlimited" in name:
-        return "freedom unlimited"
-    if "freedom flex" in name:
-        return "freedom flex"
-    if "aadvantage" in name or "aa" in name:
-        return "aadvantage platinum select"
-    return name.strip()
-
-if "best_card" in df.columns and "card_used" in df.columns:
-    df["optimal_used"] = df.apply(
-        lambda x: normalize_card(x["card_used"]) == normalize_card(x["best_card"]),
-        axis=1
-    )
+if "optimal_used" in df.columns:
+    df["optimal_used"] = df["optimal_used"].astype(str).str.lower().isin(["true", "1", "yes"])
 else:
     df["optimal_used"] = False
 
@@ -230,7 +215,7 @@ else:
         )
     )
 
-    st.dataframe(styled_df, height=600, width="stretch")
+    st.dataframe(styled_df, height=600, width=1200)
 
 st.markdown("---")
 st.info("💡 Tip: Use the checkbox above to quickly find missed optimization opportunities.")
