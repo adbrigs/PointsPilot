@@ -12,6 +12,7 @@ __pycache__/
 .vscode/
 
 # Data files
+tests/
 
 # Credentials (VERY IMPORTANT)
 credentials/

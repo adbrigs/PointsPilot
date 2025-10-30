@@ -1,124 +1,146 @@
 version: 2025-Q4
-last_updated: "2025-10-24"
+last_updated: "2025-10-30"
+
+credit_card_categories:
+  - Dining
+  - Travel
+  - Groceries
+  - Gas
+  - Drugstores
+  - Streaming
+  - Transit
+  - Other
 
 cards:
-  - card_name: Sapphire Preferred
+  - card_name: Chase Sapphire Preferred
     issuer: Chase
-    point_type: Chase Ultimate Rewards
+    type: Chase Ultimate Rewards
     base_rate: 1
     rewards:
-      Dining:
-        multiplier: 3
-      Online Grocery:
-        multiplier: 3
-      Select Streaming Services:
-        multiplier: 3
-      Travel (Chase Travel Portal):
-        multiplier: 5
-        channel: Chase Travel Portal
-      Other Travel:
-        multiplier: 2
-      Other:
-        multiplier: 1
-    notes: >
-      5× points on travel purchased through Chase Travel,
-      3× on dining (including takeout and delivery),
-      3× on select streaming services (Netflix, Spotify, Hulu, Disney+, Apple),
-      3× on online grocery purchases (excluding Walmart, Target, and wholesale clubs),
-      2× on other travel, and 1× on all other purchases.
+      Dining: 3
+      Travel: 2
+      Groceries: 1
+      Gas: 1
+      Drugstores: 1
+      Streaming: 3
+      Transit: 1
+      Other: 1
 
-  - card_name: Freedom Unlimited
+  - card_name: Chase Freedom Unlimited
     issuer: Chase
-    point_type: Chase Ultimate Rewards
+    type: Chase Ultimate Rewards
     base_rate: 1.5
     rewards:
-      Dining:
-        multiplier: 3
-      Drugstores:
-        multiplier: 3
-      Travel:
-        multiplier: 5
-        channel: Chase Travel Portal
-      Other:
-        multiplier: 1.5
-      Transit/Tolls:
-        multiplier: 1.5
-    notes: >
-      5% on travel purchased through Chase Travel,
-      3% on dining and drugstores,
-      1.5% on all other purchases.
+      Dining: 3
+      Travel: 1.5
+      Groceries: 1.5
+      Gas: 1.5
+      Drugstores: 3
+      Streaming: 1.5
+      Transit: 1.5
+      Other: 1.5
 
-  - card_name: Freedom Flex
+  - card_name: Chase Freedom Flex
     issuer: Chase
-    point_type: Chase Ultimate Rewards
+    type: Chase Ultimate Rewards
     base_rate: 1
     rewards:
-      Dining:
-        multiplier: 3
-      Drugstores:
-        multiplier: 3
-      Travel:
-        multiplier: 5
-        channel: Chase Travel Portal
-      Rotating Categories:
-        multiplier: 5
-        activation_required: true
-        cap:
-          amount: 1500
-          period: quarterly
-      Other:
-        multiplier: 1
-    rotating_categories:
-      Q1 2025:
-        - Grocery Stores (excluding Walmart & Target)
-        - Fitness Clubs & Gym Memberships
-      Q2 2025:
-        - Home Improvement Stores
-        - Streaming Services
-      Q3 2025:
-        - Gas Stations
-        - EV Charging
-        - Select Travel
-      Q4 2025:
-        - PayPal
-        - Walmart
-    promotions:
-      - description: "10% back at Walmart (Pay with PayPal)"
-        valid_from: "2025-10-01"
-        valid_to: "2025-12-31"
-        category: "Rotating Categories"
-        multiplier: 10
-      - description: "7% back on Chase Dining experiences"
-        valid_from: "2025-11-15"
-        valid_to: "2026-01-15"
-        category: "Dining"
-        multiplier: 7
-    notes: >
-      5% on quarterly rotating categories (up to $1,500 per quarter, activation required),
-      5% on travel purchased through Chase Travel,
-      3% on dining and drugstores,
-      plus limited-time bonus promotions.
+      Dining: 3
+      Travel: 1
+      Groceries: 1
+      Gas: 1
+      Drugstores: 3
+      Streaming: 1
+      Transit: 1
+      Other: 1
 
-  - card_name: AAdvantage Platinum Select
+  - card_name: Citi AAdvantage Platinum Select
     issuer: Citi
-    point_type: AAdvantage Miles
+    type: AAdvantage Miles
     base_rate: 1
     rewards:
-      Gas Stations:
-        multiplier: 2
-      Restaurants:
-        multiplier: 2
-      American Airlines Purchases:
-        multiplier: 2
-        channel: American Airlines
-      Other:
-        multiplier: 1
-    promotions:
-      - description: "3× on select AA vacation packages"
-        valid_from: "2025-09-01"
-        valid_to: "2026-01-31"
-        category: "American Airlines Purchases"
-        multiplier: 3
-    notes: >
-      2× miles on American Airlines purchases, gas stations, and restaurants;
-      1× mile on all other purchases.
+      Dining: 2
+      Travel: 2
+      Groceries: 1
+      Gas: 2
+      Drugstores: 1
+      Streaming: 1
+      Transit: 1
+      Other: 1
+
+# ==========================================================
+# Merchant name exceptions (special rules)
+# ==========================================================
+name_overrides:
+  # 🚇 Transit Merchants
+  - match: ["septa", "lyft", "uber"]
+    preferred_card: "Citi AAdvantage Platinum Select"
+    category_override: "Transit"
+    multiplier_override: 2
+
+  # ✈️ Airlines / American Airlines
+  - match: ["american", "aa.com", "americanair"]
+    category: "Travel"
+    preferred_card: "Citi AAdvantage Platinum Select"
+    multiplier_override: 2
+
+  # 🌐 Chase Travel Portal
+  - match: ["chase travel", "chase portal", "ci *chase travel"]
+    category: "Travel"
+    preferred_card: "Chase Sapphire Preferred"
+    multiplier_override: 5
+
+  # ⛽ Gas Stations
+  - match: ["marathon", "wawa", "sunoco", "shell", "exxon", "bp", "costco gas"]
+    category_override: "Gas"
+    preferred_card: "Citi AAdvantage Platinum Select"
+    multiplier_override: 2
+
+  # 🍰 Food & Dessert (Dining)
+  - match: ["isgro pastries", "paulie gee", "osteria", "four seasons", "vibrant coffee"]
+    category: "Dining"
+    preferred_card: "Chase Sapphire Preferred"
+    multiplier_override: 3
+
+  # ☕️ Cafes & Coffee Shops (Dining)
+  - match: ["cafe", "coffee", "merck wp", "sky high"]
+    category: "Dining"
+    preferred_card: "Chase Sapphire Preferred"
+    multiplier_override: 3
+
+  # 🛍️ Online Shops & Gifts
+  - match: ["etsy", "amazon", "1-800-flowers", "offer:etsy", "amazon mktpl"]
+    category: "Other"
+    preferred_card: "Chase Freedom Unlimited"
+    multiplier_override: 1.5
+
+  # 💊 Drugstores (CVS, Walgreens)
+  - match: ["cvs", "walgreens", "rite aid"]
+    category: "Drugstores"
+    preferred_card: "Chase Freedom Flex"
+    multiplier_override: 3
+
+  # 🎬 Streaming & Subscriptions
+  - match: ["openai", "chatgpt", "netflix", "spotify", "apple.com-bill"]
+    category: "Streaming"
+    preferred_card: "Chase Sapphire Preferred"
+    multiplier_override: 3
+
+  # 🧰 Home Improvement / Hardware
+  - match: ["tenth street hardware", "home depot", "lowes", "ace hardware"]
+    category: "Other"
+    preferred_card: "Chase Freedom Unlimited"
+    multiplier_override: 1.5
+
+  # 🎬 Streaming & Subscriptions (CSP & CFU split)
+  #  - Chase Sapphire Preferred gets higher streaming bonuses (3x)
+  #  - Freedom Unlimited gets general 1.5x for services like ChatGPT, Adobe, etc.
+  - match: ["netflix", "spotify", "apple.com-bill", "disney+", "hulu"]
+    category: "Streaming"
+    preferred_card: "Chase Sapphire Preferred"
+    multiplier_override: 3
+
+  - match: ["openai", "chatgpt", "adobe", "youtube.tv", "youtube premium", "youtube tv", "photolounge", "Openai *chatgpt Subscr"]
+    category: "Subscriptions"
+    preferred_card: "Chase Freedom Unlimited"
+    multiplier_override: 1.5
