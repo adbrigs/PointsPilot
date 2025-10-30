@@ -21,3 +21,4 @@ xgboost
 
 # Optional utilities (safe to include)
 datetime
+streamlit-aggrid

@@ -18,13 +18,12 @@ import pandas as pd
 def load_rules():
     base_path = os.path.dirname(os.path.dirname(__file__))
     yaml_path = os.path.join(base_path, "src", "earn_rules.yaml")
-    with open(yaml_path, "r") as f:
+    with open(yaml_path, "r", encoding="utf-8") as f:   # 👈 add encoding
         data = yaml.safe_load(f)
 
     rules = {c["card_name"]: c.get("rewards", {}) for c in data["cards"]}
     overrides = data.get("name_overrides", [])
     return rules, data["credit_card_categories"], overrides
-
 
 # ==========================================================
 # CARD NAME NORMALIZATION

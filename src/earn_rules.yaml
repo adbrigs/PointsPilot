@@ -74,7 +74,7 @@ cards:
 name_overrides:
   # 🚇 Transit Merchants
   - match: ["septa", "lyft", "uber"]
-    preferred_card: "Citi AAdvantage Platinum Select"
+    preferred_card: "Chase Sapphire Preffered"
     category_override: "Transit"
     multiplier_override: 2
 
@@ -97,7 +97,7 @@ name_overrides:
     multiplier_override: 2
 
   # 🍰 Food & Dessert (Dining)
-  - match: ["isgro pastries", "paulie gee", "osteria", "four seasons", "vibrant coffee"]
+  - match: ["isgro pastries", "paulie gee", "osteria", "four seasons", "vibrant coffee", "subaru park"]
     category: "Dining"
     preferred_card: "Chase Sapphire Preferred"
     multiplier_override: 3
@@ -109,7 +109,7 @@ name_overrides:
     multiplier_override: 3
 
   # 🛍️ Online Shops & Gifts
-  - match: ["etsy", "amazon", "1-800-flowers", "offer:etsy", "amazon mktpl"]
+  - match: ["etsy", "amazon", "1-800-flowers.com", "offer:etsy", "amazon mktpl", "openai", "chatgpt", "etsyinc", "costco"]
     category: "Other"
     preferred_card: "Chase Freedom Unlimited"
     multiplier_override: 1.5
@@ -121,7 +121,28 @@ name_overrides:
     multiplier_override: 3
 
   # 🎬 Streaming & Subscriptions
-  - match: ["openai", "chatgpt", "netflix", "spotify", "apple.com-bill"]
+  - match: 
+      [
+        "netflix",
+        "spotify",
+        "apple.com-bill",
+        "apple music",
+        "apple tv",
+        "disney",
+        "espn",
+        "fubo",
+        "hbo",
+        "max",
+        "hulu",
+        "pandora",
+        "paramount",
+        "peacock",
+        "showtime",
+        "sirius",
+        "sling",
+        "youtube",
+        "vudu"
+      ]
     category: "Streaming"
     preferred_card: "Chase Sapphire Preferred"
     multiplier_override: 3
@@ -132,14 +153,8 @@ name_overrides:
     preferred_card: "Chase Freedom Unlimited"
     multiplier_override: 1.5
 
-  # 🎬 Streaming & Subscriptions (CSP & CFU split)
-  #  - Chase Sapphire Preferred gets higher streaming bonuses (3x)
+# Subscriptions
   #  - Freedom Unlimited gets general 1.5x for services like ChatGPT, Adobe, etc.
-  - match: ["netflix", "spotify", "apple.com-bill", "disney+", "hulu"]
-    category: "Streaming"
-    preferred_card: "Chase Sapphire Preferred"
-    multiplier_override: 3
-
   - match: ["openai", "chatgpt", "adobe", "youtube.tv", "youtube premium", "youtube tv", "photolounge", "Openai *chatgpt Subscr"]
     category: "Subscriptions"
     preferred_card: "Chase Freedom Unlimited"
